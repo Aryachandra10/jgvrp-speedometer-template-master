@@ -1,0 +1,575 @@
+/* =========================================================
+   RESET & TOKENS
+   ========================================================= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --cyan:#19e6ff;
+  --violet:#7a5cff;
+  --green:#2fe6a8;
+  --amber:#ffc247;
+  --red:#ff3b5c;
+
+  --txt:#dbeaff;
+  --muted:#7c8ba6;
+
+  --rx:7deg;
+  --ry:0deg;
+
+  /* 📏 UKURAN & POSISI HUD — tweak di sini */
+  --hud-size:   260px;   /* lebar dial */
+  --hud-right:  16px;    /* jarak dari kanan */
+  --hud-bottom: 20px;    /* jarak dari bawah */
+}
+
+html,body{height:100%}
+
+body{
+  min-height:100vh;
+  background:#ffffff;
+  color:var(--txt);
+  font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* =========================================================
+   SCENE — KANAN BAWAH LAYAR
+   ========================================================= */
+.scene{
+  position:fixed;
+  top:auto;
+  bottom:var(--hud-bottom);
+  right:var(--hud-right);
+  transform:none;
+  width:min(85vw, var(--hud-size));
+  perspective:1200px;
+  perspective-origin:50% 32%;
+  transform-style:preserve-3d;
+  z-index:2;
+}
+
+/* =========================================================
+   FLOATY — animasi mengambang halus
+   ========================================================= */
+.floaty{
+  width:100%;
+  transform-style:preserve-3d;
+  animation:float3d 7.5s ease-in-out infinite;
+  will-change:transform;
+}
+@keyframes float3d{
+  0%,100%{ transform:translate3d(0,-4px,0); }
+  50%    { transform:translate3d(0, 5px,0); }
+}
+
+/* =========================================================
+   HUD
+   ========================================================= */
+.hud{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  transform-style:preserve-3d;
+  transform:rotateX(var(--rx)) rotateY(var(--ry));
+  transition:transform .25s cubic-bezier(.22,.9,.28,1);
+  will-change:transform;
+}
+
+/* =========================================================
+   DIAL
+   ========================================================= */
+.dial{
+  position:relative;
+  width:100%;
+  max-width:var(--hud-size);
+  aspect-ratio:1/1;
+  margin:0 auto;
+  transform-style:preserve-3d;
+  isolation:isolate;
+}
+
+.dial::before{
+  content:"";
+  position:absolute;
+  inset:5%;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 50% 14%, rgba(90,150,255,.18), transparent 58%),
+    radial-gradient(circle at 50% 108%, rgba(8,16,34,.95), rgba(3,5,11,.99) 72%);
+  box-shadow:
+    inset 0 0 40px rgba(80,160,255,.13),
+    inset 0 8px 26px rgba(0,0,0,.95),
+    0 18px 36px -14px rgba(0,0,0,.35),
+    0 0 0 1px rgba(90,150,255,.14);
+  transform:translateZ(-16px);
+}
+
+.dial-aura{
+  position:absolute;
+  inset:-7%;
+  border-radius:50%;
+  background:conic-gradient(from 0deg,
+      transparent 0 32%,
+      rgba(25,230,255,.45) 44%,
+      rgba(122,92,255,.55) 56%,
+      transparent 68% 100%);
+  filter:blur(18px);
+  opacity:.85;
+  animation:auraSpin 9s linear infinite;
+  transform:translateZ(-46px);
+  pointer-events:none;
+}
+@keyframes auraSpin{
+  from{ transform:translateZ(-46px) rotate(0deg); }
+  to  { transform:translateZ(-46px) rotate(360deg); }
+}
+
+.dial-rim{
+  position:absolute;
+  inset:2.5%;
+  border-radius:50%;
+  border:1px solid rgba(120,190,255,.22);
+  box-shadow:
+    0 0 26px rgba(25,230,255,.18),
+    inset 0 0 26px rgba(25,230,255,.09),
+    inset 0 2px 0 rgba(255,255,255,.12);
+  transform:translateZ(26px);
+  pointer-events:none;
+}
+
+.dial-glass{
+  position:absolute;
+  inset:5%;
+  border-radius:50%;
+  background:
+    radial-gradient(ellipse 60% 34% at 50% 8%, rgba(255,255,255,.16), transparent 70%),
+    linear-gradient(180deg, rgba(255,255,255,.05), transparent 42%);
+  transform:translateZ(34px);
+  pointer-events:none;
+  mix-blend-mode:screen;
+}
+
+.dial-svg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  transform:translateZ(8px);
+}
+
+/* ---- Ring RPM ---- */
+.rpm-track{
+  fill:none;
+  stroke:rgba(120,170,255,.13);
+  stroke-width:14;
+  stroke-linecap:round;
+}
+.rpm-fill{
+  fill:none;
+  stroke:url(#rpmGrad);
+  stroke-width:14;
+  stroke-linecap:round;
+  filter:drop-shadow(0 0 6px rgba(25,230,255,.85))
+         drop-shadow(0 0 14px rgba(25,230,255,.35));
+}
+.dial.redline .rpm-fill{
+  stroke:url(#rpmRed);
+  filter:drop-shadow(0 0 7px rgba(255,59,92,.9))
+         drop-shadow(0 0 16px rgba(255,59,92,.45));
+}
+
+/* ---- Tick & Label ---- */
+.tick{
+  stroke:rgba(150,195,255,.42);
+  stroke-width:2.2;
+  stroke-linecap:round;
+}
+.tick.major{
+  stroke:rgba(210,232,255,.92);
+  stroke-width:3.8;
+}
+.label{
+  fill:#8fa6c4;
+  font-size:20px;
+  font-weight:700;
+  letter-spacing:.02em;
+  font-family:"Segoe UI",system-ui,sans-serif;
+}
+
+#marker{
+  filter:drop-shadow(0 0 5px #19e6ff) drop-shadow(0 0 12px rgba(25,230,255,.8));
+}
+.marker-halo{ fill:rgba(25,230,255,.22); }
+.marker-dot{
+  fill:#eafcff;
+  stroke:#19e6ff;
+  stroke-width:2.2;
+}
+
+/* =========================================================
+   INDIKATOR (sein kiri/kanan)
+   ========================================================= */
+.arrow{
+  position:absolute;
+  top:50%;
+  width:0;height:0;
+  margin-top:-8px;
+  opacity:.13;
+  transition:opacity .22s, filter .22s;
+  transform:translateZ(46px);
+  pointer-events:none;
+}
+.arrow.left{
+  left:-1.5%;
+  border-top:8px solid transparent;
+  border-bottom:8px solid transparent;
+  border-right:14px solid var(--green);
+}
+.arrow.right{
+  right:-1.5%;
+  border-top:8px solid transparent;
+  border-bottom:8px solid transparent;
+  border-left:14px solid var(--green);
+}
+.arrow.on{
+  opacity:1;
+  filter:drop-shadow(0 0 9px var(--green));
+  animation:blink .9s steps(1,end) infinite;
+}
+@keyframes blink{
+  0%,49%{ opacity:1; }
+  50%,100%{ opacity:.12; }
+}
+
+/* =========================================================
+   CENTER READOUT
+   ========================================================= */
+.center{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+  text-align:center;
+  transform:translateZ(52px);
+  transform-style:preserve-3d;
+  pointer-events:none;
+}
+
+.speed{
+  font-size:clamp(26px, 6.5vw, 46px);
+  font-weight:800;
+  line-height:.95;
+  letter-spacing:-.035em;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(180deg,#ffffff 0%, #a9dcff 52%, #4a7dff 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  filter:drop-shadow(0 0 12px rgba(60,160,255,.6));
+}
+
+.unit{
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-top:1px;
+}
+
+.rpm-readout{
+  margin-top:5px;
+  font-size:10px;
+  letter-spacing:.12em;
+  color:#6f86a8;
+  text-transform:uppercase;
+}
+.rpm-readout b{
+  color:var(--cyan);
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+  text-shadow:0 0 10px rgba(25,230,255,.8);
+}
+
+/* =========================================================
+   GEAR BADGE
+   ========================================================= */
+.gear{
+  position:absolute;
+  left:50%;
+  bottom:9%;
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  border-radius:11px;
+  font-size:17px;
+  font-weight:800;
+  color:#d7f3ff;
+  text-shadow:0 0 10px rgba(25,230,255,.9);
+  background:linear-gradient(158deg, rgba(34,66,120,.92), rgba(9,17,36,.96));
+  border:1px solid rgba(90,180,255,.35);
+  box-shadow:
+    0 8px 16px -6px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.14),
+    0 0 16px -4px rgba(25,230,255,.5);
+  transform:translate(-50%,0) translateZ(38px);
+  transform-style:preserve-3d;
+  pointer-events:none;
+  transition:color .2s;
+}
+.gear.pop{
+  animation:gearPop .5s cubic-bezier(.2,1.5,.4,1);
+}
+@keyframes gearPop{
+  0%  { transform:translate(-50%,0) translateZ(38px) rotateX(0deg) scale(1); }
+  45% { transform:translate(-50%,-4px) translateZ(56px) rotateX(-42deg) scale(1.18); }
+  100%{ transform:translate(-50%,0) translateZ(38px) rotateX(0deg) scale(1); }
+}
+
+/* =========================================================
+   🔔 SEATBELT WARNING
+   ========================================================= */
+.seatbelt-warning{
+  position:absolute;
+  top:7%;
+  left:50%;
+  transform:translate(-50%,-14px) translateZ(72px);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.12em;
+  color:#ffe6ea;
+  background:linear-gradient(180deg, rgba(120,10,35,.92), rgba(70,4,22,.95));
+  border:1px solid rgba(255,80,110,.6);
+  box-shadow:
+    0 0 16px -3px rgba(255,59,92,.85),
+    inset 0 1px 0 rgba(255,255,255,.14);
+  text-shadow:0 0 8px rgba(255,120,140,.9);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .3s;
+  z-index:5;
+}
+.seatbelt-warning.on{
+  opacity:1;
+  animation:seatbeltPulse 1s ease-in-out infinite;
+}
+.seatbelt-warning .icon{
+  font-size:12px;
+  animation:seatbeltShake .6s ease-in-out infinite;
+}
+@keyframes seatbeltPulse{
+  0%,100%{ box-shadow:0 0 16px -3px rgba(255,59,92,.85), inset 0 1px 0 rgba(255,255,255,.14); }
+  50%    { box-shadow:0 0 26px 1px rgba(255,59,92,1),    inset 0 1px 0 rgba(255,255,255,.14); }
+}
+@keyframes seatbeltShake{
+  0%,100%{ transform:translateX(0); }
+  25%    { transform:translateX(-2px) rotate(-6deg); }
+  75%    { transform:translateX(2px)  rotate(6deg); }
+}
+
+/* =========================================================
+   DOCK
+   ========================================================= */
+.dock{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:10px 12px 12px;
+  border-radius:16px;
+  background:linear-gradient(180deg, rgba(17,28,50,.86), rgba(7,11,22,.94));
+  border:1px solid rgba(90,150,255,.16);
+  box-shadow:
+    0 18px 32px -18px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.07),
+    0 0 30px -10px rgba(25,230,255,.35);
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+  transform:translateZ(26px) rotateX(4deg);
+  transform-style:preserve-3d;
+}
+
+.row.top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.odo{
+  display:inline-flex;
+  align-items:baseline;
+  gap:5px;
+  padding:4px 8px;
+  border-radius:9px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(120,170,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
+.odo small{
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.14em;
+  color:var(--muted);
+}
+.odo span{
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.05em;
+  font-variant-numeric:tabular-nums;
+  color:#cfe9ff;
+  text-shadow:0 0 8px rgba(80,170,255,.6);
+}
+
+.chips{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.11em;
+  color:#65798f;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(120,170,255,.13);
+  transition:color .25s, border-color .25s, background .25s, box-shadow .25s, transform .25s;
+}
+.chip i{
+  width:5px;height:5px;
+  border-radius:50%;
+  background:#26364f;
+  transition:background .25s, box-shadow .25s;
+}
+.chip.on{
+  color:#e9ffff;
+  border-color:rgba(25,230,255,.5);
+  background:rgba(25,230,255,.09);
+  box-shadow:0 0 12px -4px rgba(25,230,255,.8);
+  transform:translateZ(10px);
+}
+.chip.on i{
+  background:var(--cyan);
+  box-shadow:0 0 7px var(--cyan), 0 0 12px rgba(25,230,255,.7);
+}
+.chip#chipBelt.on{
+  color:#fff4dd;
+  border-color:rgba(255,194,71,.55);
+  background:rgba(255,194,71,.1);
+  box-shadow:0 0 12px -4px rgba(255,194,71,.85);
+}
+.chip#chipBelt.on i{
+  background:var(--amber);
+  box-shadow:0 0 7px var(--amber);
+}
+
+.meters{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.meter{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  padding:7px 9px 9px;
+  border-radius:10px;
+  background:rgba(255,255,255,.028);
+  border:1px solid rgba(120,170,255,.1);
+  transition:transform .3s cubic-bezier(.22,.9,.28,1), box-shadow .3s, border-color .3s;
+  transform-style:preserve-3d;
+}
+.meter:hover{
+  transform:translateZ(18px);
+  border-color:rgba(90,180,255,.3);
+  box-shadow:0 12px 22px -12px rgba(0,0,0,.55), 0 0 18px -8px rgba(25,230,255,.6);
+}
+.meter-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.12em;
+  color:var(--muted);
+}
+.meter-head b{
+  font-size:10px;
+  letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;
+  color:#d9ecff;
+}
+.track{
+  height:5px;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.85);
+  overflow:hidden;
+}
+.fill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+  transition:width .35s cubic-bezier(.22,.9,.28,1), filter .3s;
+}
+#fFuel{
+  background:linear-gradient(90deg,#2fe6a8,#19e6ff);
+  box-shadow:0 0 10px rgba(47,230,168,.75);
+}
+#fHealth{
+  background:linear-gradient(90deg,#ffc247,#ff3b5c);
+  box-shadow:0 0 10px rgba(255,120,80,.7);
+}
+.meter.low .fill{ filter:saturate(1.4) brightness(1.15); }
+.meter.low .meter-head b{ color:var(--red); text-shadow:0 0 8px rgba(255,59,92,.9); }
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width:900px){
+  :root{
+    --hud-size:   230px;
+    --hud-right:  12px;
+    --hud-bottom: 16px;
+  }
+}
+
+@media (max-width:640px){
+  :root{
+    --hud-size:   200px;
+    --hud-right:  10px;
+    --hud-bottom: 12px;
+  }
+  .hud{ gap:8px; }
+  .dock{ padding:8px 10px 10px; border-radius:14px; gap:6px; }
+  .meters{ gap:6px; }
+  .chip span{ display:none; }
+  .chip{ padding:5px; }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition-duration:.01ms !important; }
+  .hud{ transform:none !important; }
+  .seatbelt-warning.on,
+  .seatbelt-warning .icon{ animation:none; }
+}

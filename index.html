@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Speedometer HUD</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- ===== SCENE (diposisikan di kanan oleh CSS) ===== -->
+    <div class="scene">
+        <div class="floaty">
+
+            <main class="hud" id="hud">
+
+                <!-- ===== DIAL ===== -->
+                <div class="dial" id="dial">
+                    <div class="dial-aura"></div>
+                    <div class="dial-rim"></div>
+
+                    <svg class="dial-svg" viewBox="0 0 400 400" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="rpmGrad" x1="0" y1="1" x2="1" y2="0">
+                                <stop offset="0"   stop-color="#19e6ff"/>
+                                <stop offset="55%" stop-color="#4aa8ff"/>
+                                <stop offset="1"   stop-color="#7a5cff"/>
+                            </linearGradient>
+                            <linearGradient id="rpmRed" x1="0" y1="1" x2="1" y2="0">
+                                <stop offset="0" stop-color="#ffc247"/>
+                                <stop offset="1" stop-color="#ff3b5c"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- RPM ring 270 derajat -->
+                        <circle class="rpm-track" id="rpmTrack" cx="200" cy="200" r="136"
+                                transform="rotate(135 200 200)"/>
+                        <circle class="rpm-fill" id="rpmFill" cx="200" cy="200" r="136"
+                                transform="rotate(135 200 200)"/>
+
+                        <g id="ticks"></g>
+                        <g id="labels"></g>
+
+                        <!-- marker penunjuk RPM -->
+                        <g id="marker">
+                            <circle class="marker-halo" r="14"/>
+                            <circle class="marker-dot"  r="5.5"/>
+                        </g>
+                    </svg>
+
+                    <div class="dial-glass"></div>
+
+                    <!-- ===== GAMBAR MOBIL BALAP (SVG, TANPA CSS EKSTERNAL) ===== -->
+                    <svg class="race-car" viewBox="0 0 300 120" width="170" height="70"
+                         style="position:absolute; left:50%; top:60%; transform:translate(-50%,-50%);
+                                opacity:0.9; pointer-events:none; z-index:0;">
+                        <defs>
+                            <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0" stop-color="#19e6ff"/>
+                                <stop offset="1" stop-color="#7a5cff"/>
+                            </linearGradient>
+                            <linearGradient id="carGlow" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0" stop-color="#19e6ff" stop-opacity="0.9"/>
+                                <stop offset="1" stop-color="#ff3b5c" stop-opacity="0.9"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- bayangan / glow bawah -->
+                        <ellipse cx="150" cy="104" rx="120" ry="10" fill="url(#carGlow)" opacity="0.35"/>
+
+                        <!-- badan mobil -->
+                        <path d="M20 80 Q40 40 90 36 L200 36 Q260 40 280 80 Z"
+                              fill="url(#carBody)" stroke="#0a1a2f" stroke-width="3"/>
+
+                        <!-- kaca depan -->
+                        <path d="M95 44 Q120 28 160 30 L200 36 Q170 46 140 46 Z"
+                              fill="#0a1a2f" opacity="0.85"/>
+
+                        <!-- spoiler belakang -->
+                        <rect x="10" y="52" width="26" height="8" rx="3" fill="#4aa8ff"/>
+                        <rect x="18" y="60" width="6" height="20" fill="#4aa8ff"/>
+
+                        <!-- garis aerodinamis -->
+                        <line x1="60" y1="62" x2="250" y2="62" stroke="#ffffff" stroke-width="2" opacity="0.35"/>
+
+                        <!-- roda depan & belakang -->
+                        <circle cx="85" cy="86" r="16" fill="#0a1a2f" stroke="#4aa8ff" stroke-width="4"/>
+                        <circle cx="85" cy="86" r="6"  fill="#19e6ff"/>
+                        <circle cx="230" cy="86" r="16" fill="#0a1a2f" stroke="#4aa8ff" stroke-width="4"/>
+                        <circle cx="230" cy="86" r="6"  fill="#19e6ff"/>
+
+                        <!-- efek kecepatan / motion lines -->
+                        <line x1="0" y1="70" x2="30" y2="70" stroke="#19e6ff" stroke-width="3" opacity="0.7"/>
+                        <line x1="0" y1="80" x2="22" y2="80" stroke="#7a5cff" stroke-width="3" opacity="0.6"/>
+                        <line x1="0" y1="90" x2="34" y2="90" stroke="#ff3b5c" stroke-width="3" opacity="0.6"/>
+                    </svg>
+
+                    <!-- 🔔 BANNER SEATBELT -->
+                    <div class="seatbelt-warning" id="seatbeltWarning">
+                        <span class="icon">⚠</span>
+                        <span>FASTEN SEATBELT</span>
+                    </div>
+
+                    <!-- Indikator sein kiri/kanan -->
+                    <div class="arrow left"  id="indLeft"></div>
+                    <div class="arrow right" id="indRight"></div>
+
+                    <!-- Readout tengah -->
+                    <div class="center">
+                        <div class="speed" id="vSpeed">0</div>
+                        <div class="unit"  id="vUnit">mph</div>
+                        <div class="rpm-readout"><b id="vRpm">0</b> rpm</div>
+                    </div>
+
+                    <!-- Badge gigi -->
+                    <div class="gear" id="vGear"><span>N</span></div>
+                </div>
+
+                <!-- ===== DOCK ===== -->
+                <div class="dock">
+                    <div class="row top">
+                        <div class="odo">
+                            <small>ODO</small><span id="vOdo">000000</span><small id="vOdoUnit">mi</small>
+                        </div>
+                        <div class="chips">
+                            <span class="chip" id="chipEngine"><i></i><span>ENG</span></span>
+                            <span class="chip" id="chipLights"><i></i><span>LIGHT</span></span>
+                            <span class="chip" id="chipBelt"><i></i><span>BELT</span></span>
+                        </div>
+                    </div>
+
+                    <div class="meters">
+                        <div class="meter fuel" id="mFuel">
+                            <div class="meter-head"><span>FUEL</span><b id="vFuel">--</b></div>
+                            <div class="track"><div class="fill" id="fFuel"></div></div>
+                        </div>
+                        <div class="meter health" id="mHealth">
+                            <div class="meter-head"><span>HEALTH</span><b id="vHealth">--</b></div>
+                            <div class="track"><div class="fill" id="fHealth"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== SUMBER DATA (hidden) ===== -->
+                <div class="data-source" hidden>
+                    <section>
+                        <dl>
+                            <dt>Engine</dt>      <dd id="engine">&nbsp;</dd>
+                            <dt>Speed</dt>       <dd id="speed">&nbsp;</dd>
+                            <dt>RPM</dt>         <dd id="rpm">&nbsp;</dd>
+                            <dt>Fuel</dt>        <dd id="fuel">&nbsp;</dd>
+                            <dt>Health</dt>      <dd id="health">&nbsp;</dd>
+                        </dl>
+                    </section>
+                    <section>
+                        <dl>
+                            <dt>Gear</dt>        <dd id="gear">&nbsp;</dd>
+                            <dt>Headlights</dt>  <dd id="headlights">&nbsp;</dd>
+                            <dt>Indicators</dt>  <dd id="indicators">&nbsp;</dd>
+                            <dt>Seatbelts</dt>   <dd id="seatbelts">&nbsp;</dd>
+                            <dt>Odometer</dt>    <dd id="odometer">&nbsp;</dd>
+                        </dl>
+                    </section>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="hud.js"></script>
+</body>
+</html>
