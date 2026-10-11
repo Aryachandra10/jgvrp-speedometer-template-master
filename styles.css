@@ -23,15 +23,13 @@
     --rx: 7deg;
     --ry: 0deg;
 
-    /* Ukuran dan posisi HUD */
     --hud-size: 260px;
     --hud-right: 16px;
     --hud-bottom: 20px;
 }
 
 /* =========================================================
-   TRANSPARENT BACKGROUND
-   Memperbaiki background putih / hitam pada game
+   TRANSPARENT BACKGROUND — pakai rgba(0,0,0,0)
    ========================================================= */
 
 html {
@@ -41,8 +39,8 @@ html {
     padding: 0;
     overflow: hidden;
 
-    background: transparent !important;
-    background-color: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
 }
 
 body {
@@ -65,8 +63,8 @@ body {
 
     overflow: hidden;
 
-    background: transparent !important;
-    background-color: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
 
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -81,7 +79,7 @@ body::after {
 }
 
 /* =========================================================
-   SCENE — HUD di kanan bawah layar
+   SCENE
    ========================================================= */
 
 .scene {
@@ -95,7 +93,7 @@ body::after {
     width: min(85vw, var(--hud-size));
     height: auto;
 
-    background: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
 
     perspective: 1200px;
     perspective-origin: 50% 32%;
@@ -107,14 +105,14 @@ body::after {
 }
 
 /* =========================================================
-   FLOATY — Animasi mengambang
+   FLOATY
    ========================================================= */
 
 .floaty {
     width: 100%;
     height: auto;
 
-    background: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
 
     transform-style: preserve-3d;
 
@@ -135,7 +133,7 @@ body::after {
 }
 
 /* =========================================================
-   HUD CONTAINER
+   HUD
    ========================================================= */
 
 .hud {
@@ -146,7 +144,7 @@ body::after {
     flex-direction: column;
     gap: 12px;
 
-    background: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
 
     transform-style: preserve-3d;
 
@@ -173,13 +171,12 @@ body::after {
 
     margin: 0 auto;
 
-    background: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
 
     transform-style: preserve-3d;
     isolation: isolate;
 }
 
-/* Background hanya untuk lingkaran speedometer */
 .dial::before {
     content: "";
 
@@ -314,7 +311,7 @@ body::after {
     width: 100%;
     height: 100%;
 
-    background: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
 
     overflow: visible;
 
@@ -478,7 +475,7 @@ body::after {
 
     text-align: center;
 
-    background: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
 
     transform: translateZ(52px);
 
@@ -713,8 +710,7 @@ body::after {
 }
 
 /* =========================================================
-   DOCK PANEL
-   ✨ TRANSPARAN TOTAL — tanpa background hitam
+   DOCK PANEL — transparan total
    ========================================================= */
 
 .dock {
@@ -726,19 +722,15 @@ body::after {
 
     border-radius: 16px;
 
-    /* 🚫 Hilangkan SEMUA background */
-    background: none !important;
-    background-color: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
     background-image: none !important;
 
-    /* 🚫 Hilangkan shadow gelap */
     box-shadow: none !important;
 
-    /* 🚫 Hilangkan backdrop-filter (sering bug di FiveM) */
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
 
-    /* Border tipis aja sebagai frame */
     border: 1px solid rgba(120, 170, 255, .22);
 
     transform: translateZ(26px) rotateX(4deg);
@@ -770,9 +762,8 @@ body::after {
 
     border-radius: 9px;
 
-    /* 🚫 Background transparan */
-    background: none !important;
-    background-color: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
 
     border: 1px solid rgba(120, 170, 255, .22);
 
@@ -827,9 +818,8 @@ body::after {
 
     color: #8b9cb3;
 
-    /* 🚫 Background transparan */
-    background: none !important;
-    background-color: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
 
     border: 1px solid rgba(120, 170, 255, .22);
 
@@ -912,9 +902,8 @@ body::after {
 
     border-radius: 10px;
 
-    /* 🚫 Background transparan */
-    background: none !important;
-    background-color: transparent !important;
+    background: rgba(0, 0, 0, 0) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
 
     border: 1px solid rgba(120, 170, 255, .22);
 
@@ -956,7 +945,6 @@ body::after {
     color: #d9ecff;
 }
 
-/* Progress track — tetap ada tapi tipis */
 .track {
     height: 5px;
 
@@ -1053,10 +1041,6 @@ body::after {
         padding: 5px;
     }
 }
-
-/* =========================================================
-   REDUCED MOTION
-   ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
     *,
