@@ -8,7 +8,7 @@
 </head>
 <body>
 
-    <!-- ===== SCENE (diposisikan di kanan oleh CSS) ===== -->
+    <!-- ===== SCENE (diposisikan kanan-bawah oleh CSS) ===== -->
     <div class="scene">
         <div class="floaty">
 
@@ -50,9 +50,12 @@
 
                     <div class="dial-glass"></div>
 
-                    <!-- ===== GAMBAR MOBIL BALAP (SVG, TANPA CSS EKSTERNAL) ===== -->
-                    <svg class="race-car" viewBox="0 0 300 120" width="170" height="70"
-                         style="position:absolute; left:50%; top:60%; transform:translate(-50%,-50%);
+                    <!-- ===== GAMBAR MOBIL BALAP ===== -->
+                    <!-- Posisi dipindah ke 76% supaya tidak nabrak angka speed -->
+                    <svg class="race-car" viewBox="0 0 300 120" width="150" height="60"
+                         aria-hidden="true"
+                         style="position:absolute; left:50%; top:76%;
+                                transform:translate(-50%,-50%);
                                 opacity:0.9; pointer-events:none; z-index:0;">
                         <defs>
                             <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
@@ -166,6 +169,10 @@
             </main>
         </div>
     </div>
+
+    <!-- ===== 🔊 SOUND SEATBELT (WAJIB — dipakai hud.js) ===== -->
+    <!-- Ganti src sesuai nama file suara kamu -->
+    <audio id="seatbeltSound" src="seatbelt-warning.mp3" loop preload="auto"></audio>
 
     <script src="script.js"></script>
     <script src="hud.js"></script>
