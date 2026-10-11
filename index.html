@@ -1,180 +1,509 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Speedometer HUD</title>
-    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Cluster HUD - FiveM</title>
+<style>
+  :root{
+    --panel:rgba(10,15,22,.55);
+    --panel-2:rgba(13,20,29,.65);
+    --line:rgba(30,42,58,.85);
+    --txt:#e6f1ff;
+    --dim:#8ba0b8;
+    --cyan:#19e6ff;
+    --blue:#4aa8ff;
+    --violet:#7a5cff;
+    --amber:#ffc247;
+    --red:#ff3b5c;
+    --green:#25d07d;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  html,body{
+    width:100%;
+    height:100%;
+    background:transparent !important;
+    overflow:hidden;
+    font-family:'Segoe UI', 'SF Pro Display', system-ui, sans-serif;
+    color:var(--txt);
+    pointer-events:none; /* klik tembus ke game */
+    user-select:none;
+  }
+
+  /* ============ WRAPPER POJOK KANAN BAWAH ============ */
+  .scene{
+    position:fixed;
+    right:24px;
+    bottom:24px;
+    width:min(560px, 42vw);
+    min-width:400px;
+    z-index:9999;
+    pointer-events:none;
+  }
+
+  /* ============ PANEL UTAMA ============ */
+  .hud{
+    width:100%;
+    background:var(--panel);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px;
+    display:grid;
+    grid-template-rows:auto 1fr auto;
+    gap:10px;
+    box-shadow:
+      0 0 0 1px rgba(25,230,255,.06),
+      0 20px 40px -16px rgba(0,0,0,.7),
+      inset 0 1px 0 rgba(255,255,255,.04);
+    position:relative;
+    overflow:hidden;
+  }
+  .hud::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      linear-gradient(transparent 96%, rgba(25,230,255,.05) 100%),
+      linear-gradient(90deg, transparent 96%, rgba(25,230,255,.05) 100%);
+    background-size:6px 6px;
+    pointer-events:none;
+    opacity:.6;
+    border-radius:16px;
+  }
+
+  /* ============ BAR ATAS ============ */
+  .hud-bar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:7px 10px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+  .hud-bar--top{justify-content:space-between}
+
+  .turn-signals{display:flex;gap:7px}
+  .arrow{
+    width:26px;height:26px;
+    border-radius:7px;
+    background:rgba(10,16,24,.7);
+    border:1px solid var(--line);
+    position:relative;
+    transition:.2s;
+  }
+  .arrow::before{
+    content:"";
+    position:absolute; inset:0; margin:auto;
+    width:0;height:0;
+    border-top:6px solid transparent;
+    border-bottom:6px solid transparent;
+  }
+  .arrow.left::before{
+    border-right:9px solid var(--dim);
+    transform:translateX(-1px);
+  }
+  .arrow.right::before{
+    border-left:9px solid var(--dim);
+    transform:translateX(1px);
+  }
+  .arrow.active{
+    border-color:var(--cyan);
+    box-shadow:0 0 12px rgba(25,230,255,.6);
+  }
+  .arrow.left.active::before{border-right-color:var(--cyan)}
+  .arrow.right.active::before{border-left-color:var(--cyan)}
+
+  .seatbelt-warning{
+    display:none;
+    align-items:center;
+    gap:6px;
+    padding:4px 10px;
+    border-radius:6px;
+    background:rgba(255,59,92,.18);
+    border:1px solid rgba(255,59,92,.6);
+    color:var(--red);
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:1.2px;
+    animation:blink 1s steps(2,start) infinite;
+  }
+  .seatbelt-warning.show{display:flex}
+  .seatbelt-warning .icon{font-size:12px}
+  @keyframes blink{50%{opacity:.35}}
+
+  .chips{display:flex;gap:6px}
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:4px 8px;
+    border-radius:999px;
+    background:rgba(10,16,24,.7);
+    border:1px solid var(--line);
+    color:var(--dim);
+    font-size:9.5px;
+    font-weight:700;
+    letter-spacing:1px;
+    transition:.25s;
+  }
+  .chip i{
+    width:6px;height:6px;border-radius:50%;
+    background:#2a3a52;
+    transition:.25s;
+  }
+  .chip.active{color:var(--txt);border-color:rgba(25,230,255,.45)}
+  .chip.active i{
+    background:var(--cyan);
+    box-shadow:0 0 8px var(--cyan);
+  }
+  .chip.warn{border-color:rgba(255,59,92,.55);color:var(--red)}
+  .chip.warn i{background:var(--red);box-shadow:0 0 8px var(--red)}
+
+  /* ============ TENGAH ============ */
+  .hud-mid{
+    display:grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap:10px;
+  }
+
+  .cell{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px;
+    position:relative;
+    overflow:hidden;
+  }
+  .cell::after{
+    content:"";
+    position:absolute;
+    top:0; left:12px; right:12px; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(25,230,255,.4), transparent);
+  }
+
+  .cell-label{
+    font-size:9.5px;
+    letter-spacing:1.8px;
+    color:var(--dim);
+    font-weight:700;
+    margin-bottom:6px;
+  }
+
+  /* SPEED */
+  .speed-cell{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    min-height:150px;
+  }
+  .speed-num{
+    font-size:clamp(56px, 7vw, 88px);
+    font-weight:800;
+    line-height:.95;
+    letter-spacing:-3px;
+    background:linear-gradient(180deg, #ffffff 0%, #7fdcff 60%, #19e6ff 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    text-shadow:0 0 30px rgba(25,230,255,.3);
+    font-variant-numeric:tabular-nums;
+  }
+  .speed-unit{
+    margin-top:2px;
+    font-size:11px;
+    letter-spacing:4px;
+    color:var(--dim);
+    font-weight:700;
+  }
+  .speed-sub{
+    margin-top:8px;
+    font-size:10.5px;
+    letter-spacing:1.6px;
+    color:var(--dim);
+  }
+  .speed-sub b{
+    color:var(--cyan);
+    font-weight:800;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* RPM */
+  .rpm-cell{display:flex;flex-direction:column;justify-content:center}
+  .rpm-value{
+    font-size:34px;
+    font-weight:800;
+    letter-spacing:-1px;
+    color:#fff;
+    font-variant-numeric:tabular-nums;
+    line-height:1;
+  }
+  .rpm-value small{
+    font-size:10px;
+    color:var(--dim);
+    letter-spacing:2.5px;
+    font-weight:600;
+    margin-left:6px;
+    vertical-align:middle;
+  }
+
+  .rpm-bars{
+    display:grid;
+    grid-template-columns:repeat(20, 1fr);
+    gap:2px;
+    margin-top:10px;
+    height:20px;
+  }
+  .rpm-bars .seg{
+    background:rgba(26,38,55,.85);
+    border-radius:2px;
+    transition:.15s;
+  }
+  .rpm-bars .seg.on{
+    background:linear-gradient(180deg, var(--cyan), var(--blue));
+    box-shadow:0 0 8px rgba(25,230,255,.75);
+  }
+  .rpm-bars .seg.red.on{
+    background:linear-gradient(180deg, var(--amber), var(--red));
+    box-shadow:0 0 8px rgba(255,59,92,.85);
+  }
+
+  .gear-box{
+    margin-top:10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:7px 11px;
+    background:rgba(10,16,24,.75);
+    border:1px solid var(--line);
+    border-radius:8px;
+  }
+  .gear-box .lbl{
+    font-size:9.5px;letter-spacing:1.8px;color:var(--dim);font-weight:700;
+  }
+  .gear-box .val{
+    font-size:20px;
+    font-weight:800;
+    color:var(--cyan);
+    letter-spacing:1px;
+    line-height:1;
+    text-shadow:0 0 12px rgba(25,230,255,.7);
+    min-width:26px;
+    text-align:center;
+  }
+
+  /* ============ BAR BAWAH ============ */
+  .hud-bar--bottom{
+    display:grid;
+    grid-template-columns:auto 1fr 1fr;
+    gap:10px;
+    align-items:center;
+  }
+
+  .odo{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+    padding:7px 11px;
+    background:rgba(10,16,24,.75);
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-variant-numeric:tabular-nums;
+  }
+  .odo small{
+    font-size:9px;letter-spacing:1.8px;color:var(--dim);font-weight:700;
+  }
+  .odo span{
+    font-size:15px;font-weight:800;letter-spacing:1.2px;color:#fff;
+  }
+  .odo #vOdoUnit{color:var(--dim);font-weight:600}
+
+  .meter{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:7px 11px;
+    background:rgba(10,16,24,.75);
+    border:1px solid var(--line);
+    border-radius:8px;
+  }
+  .meter-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:9.5px;
+    letter-spacing:1.8px;
+    color:var(--dim);
+    font-weight:700;
+  }
+  .meter-head b{
+    color:#fff;
+    font-size:12px;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:0;
+  }
+  .track{
+    height:6px;
+    background:rgba(26,38,55,.9);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .fill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, var(--cyan), var(--blue));
+    box-shadow:0 0 10px rgba(25,230,255,.7);
+    transition:width .3s ease;
+  }
+  .meter.health .fill{
+    background:linear-gradient(90deg, var(--green), var(--cyan));
+    box-shadow:0 0 10px rgba(37,208,125,.6);
+  }
+
+  /* responsive kalau layar sempit */
+  @media (max-width:820px){
+    .scene{
+      right:12px;
+      bottom:12px;
+      width:calc(100vw - 24px);
+      min-width:0;
+    }
+  }
+</style>
 </head>
 <body>
 
-    <!-- ===== SCENE (diposisikan kanan-bawah oleh CSS) ===== -->
-    <div class="scene">
-        <div class="floaty">
+<div class="scene">
+  <main class="hud" id="hud">
 
-            <main class="hud" id="hud">
+    <!-- ============ BAR ATAS ============ -->
+    <header class="hud-bar hud-bar--top">
+      <div class="turn-signals">
+        <span class="arrow left"  id="indLeft"></span>
+        <span class="arrow right" id="indRight"></span>
+      </div>
 
-                <!-- ===== DIAL ===== -->
-                <div class="dial" id="dial">
-                    <div class="dial-aura"></div>
-                    <div class="dial-rim"></div>
+      <div class="seatbelt-warning" id="seatbeltWarning">
+        <span class="icon">&#9888;</span>
+        <span>SEATBELT</span>
+      </div>
 
-                    <svg class="dial-svg" viewBox="0 0 400 400" aria-hidden="true">
-                        <defs>
-                            <linearGradient id="rpmGrad" x1="0" y1="1" x2="1" y2="0">
-                                <stop offset="0"   stop-color="#19e6ff"/>
-                                <stop offset="55%" stop-color="#4aa8ff"/>
-                                <stop offset="1"   stop-color="#7a5cff"/>
-                            </linearGradient>
-                            <linearGradient id="rpmRed" x1="0" y1="1" x2="1" y2="0">
-                                <stop offset="0" stop-color="#ffc247"/>
-                                <stop offset="1" stop-color="#ff3b5c"/>
-                            </linearGradient>
-                        </defs>
+      <div class="chips">
+        <span class="chip" id="chipEngine"><i></i><span>ENG</span></span>
+        <span class="chip" id="chipLights"><i></i><span>LIGHT</span></span>
+        <span class="chip" id="chipBelt"><i></i><span>BELT</span></span>
+      </div>
+    </header>
 
-                        <!-- RPM ring 270 derajat -->
-                        <circle class="rpm-track" id="rpmTrack" cx="200" cy="200" r="136"
-                                transform="rotate(135 200 200)"/>
-                        <circle class="rpm-fill" id="rpmFill" cx="200" cy="200" r="136"
-                                transform="rotate(135 200 200)"/>
+    <!-- ============ TENGAH ============ -->
+    <section class="hud-mid">
 
-                        <g id="ticks"></g>
-                        <g id="labels"></g>
+      <div class="cell speed-cell">
+        <div class="cell-label">VELOCITY</div>
+        <div class="speed-num" id="vSpeed">0</div>
+        <div class="speed-unit" id="vUnit">mph</div>
+        <div class="speed-sub">ENGINE <b id="vRpmMid">0</b> RPM</div>
+      </div>
 
-                        <!-- marker penunjuk RPM -->
-                        <g id="marker">
-                            <circle class="marker-halo" r="14"/>
-                            <circle class="marker-dot"  r="5.5"/>
-                        </g>
-                    </svg>
+      <div class="cell rpm-cell">
+        <div class="cell-label">REV / RPM</div>
+        <div class="rpm-value"><span id="vRpm">0</span><small>RPM</small></div>
 
-                    <div class="dial-glass"></div>
+        <div class="rpm-bars" id="rpmBars"></div>
 
-                    <!-- ===== GAMBAR MOBIL BALAP ===== -->
-                    <!-- Posisi dipindah ke 76% supaya tidak nabrak angka speed -->
-                    <svg class="race-car" viewBox="0 0 300 120" width="150" height="60"
-                         aria-hidden="true"
-                         style="position:absolute; left:50%; top:76%;
-                                transform:translate(-50%,-50%);
-                                opacity:0.9; pointer-events:none; z-index:0;">
-                        <defs>
-                            <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0" stop-color="#19e6ff"/>
-                                <stop offset="1" stop-color="#7a5cff"/>
-                            </linearGradient>
-                            <linearGradient id="carGlow" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0" stop-color="#19e6ff" stop-opacity="0.9"/>
-                                <stop offset="1" stop-color="#ff3b5c" stop-opacity="0.9"/>
-                            </linearGradient>
-                        </defs>
-
-                        <!-- bayangan / glow bawah -->
-                        <ellipse cx="150" cy="104" rx="120" ry="10" fill="url(#carGlow)" opacity="0.35"/>
-
-                        <!-- badan mobil -->
-                        <path d="M20 80 Q40 40 90 36 L200 36 Q260 40 280 80 Z"
-                              fill="url(#carBody)" stroke="#0a1a2f" stroke-width="3"/>
-
-                        <!-- kaca depan -->
-                        <path d="M95 44 Q120 28 160 30 L200 36 Q170 46 140 46 Z"
-                              fill="#0a1a2f" opacity="0.85"/>
-
-                        <!-- spoiler belakang -->
-                        <rect x="10" y="52" width="26" height="8" rx="3" fill="#4aa8ff"/>
-                        <rect x="18" y="60" width="6" height="20" fill="#4aa8ff"/>
-
-                        <!-- garis aerodinamis -->
-                        <line x1="60" y1="62" x2="250" y2="62" stroke="#ffffff" stroke-width="2" opacity="0.35"/>
-
-                        <!-- roda depan & belakang -->
-                        <circle cx="85" cy="86" r="16" fill="#0a1a2f" stroke="#4aa8ff" stroke-width="4"/>
-                        <circle cx="85" cy="86" r="6"  fill="#19e6ff"/>
-                        <circle cx="230" cy="86" r="16" fill="#0a1a2f" stroke="#4aa8ff" stroke-width="4"/>
-                        <circle cx="230" cy="86" r="6"  fill="#19e6ff"/>
-
-                        <!-- efek kecepatan / motion lines -->
-                        <line x1="0" y1="70" x2="30" y2="70" stroke="#19e6ff" stroke-width="3" opacity="0.7"/>
-                        <line x1="0" y1="80" x2="22" y2="80" stroke="#7a5cff" stroke-width="3" opacity="0.6"/>
-                        <line x1="0" y1="90" x2="34" y2="90" stroke="#ff3b5c" stroke-width="3" opacity="0.6"/>
-                    </svg>
-
-                    <!-- 🔔 BANNER SEATBELT -->
-                    <div class="seatbelt-warning" id="seatbeltWarning">
-                        <span class="icon">⚠</span>
-                        <span>FASTEN SEATBELT</span>
-                    </div>
-
-                    <!-- Indikator sein kiri/kanan -->
-                    <div class="arrow left"  id="indLeft"></div>
-                    <div class="arrow right" id="indRight"></div>
-
-                    <!-- Readout tengah -->
-                    <div class="center">
-                        <div class="speed" id="vSpeed">0</div>
-                        <div class="unit"  id="vUnit">mph</div>
-                        <div class="rpm-readout"><b id="vRpm">0</b> rpm</div>
-                    </div>
-
-                    <!-- Badge gigi -->
-                    <div class="gear" id="vGear"><span>N</span></div>
-                </div>
-
-                <!-- ===== DOCK ===== -->
-                <div class="dock">
-                    <div class="row top">
-                        <div class="odo">
-                            <small>ODO</small><span id="vOdo">000000</span><small id="vOdoUnit">mi</small>
-                        </div>
-                        <div class="chips">
-                            <span class="chip" id="chipEngine"><i></i><span>ENG</span></span>
-                            <span class="chip" id="chipLights"><i></i><span>LIGHT</span></span>
-                            <span class="chip" id="chipBelt"><i></i><span>BELT</span></span>
-                        </div>
-                    </div>
-
-                    <div class="meters">
-                        <div class="meter fuel" id="mFuel">
-                            <div class="meter-head"><span>FUEL</span><b id="vFuel">--</b></div>
-                            <div class="track"><div class="fill" id="fFuel"></div></div>
-                        </div>
-                        <div class="meter health" id="mHealth">
-                            <div class="meter-head"><span>HEALTH</span><b id="vHealth">--</b></div>
-                            <div class="track"><div class="fill" id="fHealth"></div></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===== SUMBER DATA (hidden) ===== -->
-                <div class="data-source" hidden>
-                    <section>
-                        <dl>
-                            <dt>Engine</dt>      <dd id="engine">&nbsp;</dd>
-                            <dt>Speed</dt>       <dd id="speed">&nbsp;</dd>
-                            <dt>RPM</dt>         <dd id="rpm">&nbsp;</dd>
-                            <dt>Fuel</dt>        <dd id="fuel">&nbsp;</dd>
-                            <dt>Health</dt>      <dd id="health">&nbsp;</dd>
-                        </dl>
-                    </section>
-                    <section>
-                        <dl>
-                            <dt>Gear</dt>        <dd id="gear">&nbsp;</dd>
-                            <dt>Headlights</dt>  <dd id="headlights">&nbsp;</dd>
-                            <dt>Indicators</dt>  <dd id="indicators">&nbsp;</dd>
-                            <dt>Seatbelts</dt>   <dd id="seatbelts">&nbsp;</dd>
-                            <dt>Odometer</dt>    <dd id="odometer">&nbsp;</dd>
-                        </dl>
-                    </section>
-                </div>
-
-            </main>
+        <div class="gear-box">
+          <span class="lbl">GEAR</span>
+          <span class="val" id="vGear">N</span>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ BAR BAWAH ============ -->
+    <footer class="hud-bar hud-bar--bottom">
+
+      <div class="odo">
+        <small>ODO</small>
+        <span id="vOdo">000000</span>
+        <small id="vOdoUnit">mi</small>
+      </div>
+
+      <div class="meter fuel" id="mFuel">
+        <div class="meter-head"><span>FUEL</span><b id="vFuel">--</b></div>
+        <div class="track"><div class="fill" id="fFuel"></div></div>
+      </div>
+
+      <div class="meter health" id="mHealth">
+        <div class="meter-head"><span>HEALTH</span><b id="vHealth">--</b></div>
+        <div class="track"><div class="fill" id="fHealth"></div></div>
+      </div>
+
+    </footer>
+
+    <!-- ============ SUMBER DATA (hidden) ============ -->
+    <div class="data-source" hidden>
+      <section>
+        <dl>
+          <dt>Engine</dt>      <dd id="engine">&nbsp;</dd>
+          <dt>Speed</dt>       <dd id="speed">&nbsp;</dd>
+          <dt>RPM</dt>         <dd id="rpm">&nbsp;</dd>
+          <dt>Fuel</dt>        <dd id="fuel">&nbsp;</dd>
+          <dt>Health</dt>      <dd id="health">&nbsp;</dd>
+        </dl>
+      </section>
+      <section>
+        <dl>
+          <dt>Gear</dt>        <dd id="gear">&nbsp;</dd>
+          <dt>Headlights</dt>  <dd id="headlights">&nbsp;</dd>
+          <dt>Indicators</dt>  <dd id="indicators">&nbsp;</dd>
+          <dt>Seatbelts</dt>   <dd id="seatbelts">&nbsp;</dd>
+          <dt>Odometer</dt>    <dd id="odometer">&nbsp;</dd>
+        </dl>
+      </section>
     </div>
 
-    <!-- ===== 🔊 SOUND SEATBELT (WAJIB — dipakai hud.js) ===== -->
-    <!-- Ganti src sesuai nama file suara kamu -->
-    <audio id="seatbeltSound" src="seatbelt-warning.mp3" loop preload="auto"></audio>
+  </main>
+</div>
 
-    <script src="script.js"></script>
-    <script src="hud.js"></script>
+<!-- ===== SOUND SEATBELT ===== -->
+<audio id="seatbeltSound" src="seatbelt-warning.mp3" loop preload="auto"></audio>
+
+<script src="script.js"></script>
+<script src="hud.js"></script>
+
+<!-- ===== Helper: generate RPM segments ===== -->
+<script>
+(function(){
+  const bars = document.getElementById('rpmBars');
+  if(!bars) return;
+
+  // generate 20 segmen
+  bars.innerHTML = '';
+  for(let i=0;i<20;i++){
+    const s = document.createElement('span');
+    s.className = 'seg' + (i >= 15 ? ' red' : '');
+    bars.appendChild(s);
+  }
+
+  const segs = Array.from(bars.children);
+  const rpmEl = document.getElementById('vRpm');
+  const midEl = document.getElementById('vRpmMid');
+  if(!rpmEl) return;
+
+  function loop(){
+    const val = parseInt(rpmEl.textContent.replace(/[^0-9]/g,''), 10) || 0;
+    const lit = Math.min(20, Math.round((val / 8000) * 20));
+    segs.forEach((s,i)=> s.classList.toggle('on', i < lit));
+    if(midEl) midEl.textContent = val;
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+
 </body>
 </html>

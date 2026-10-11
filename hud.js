@@ -1,10 +1,13 @@
 /* ==========================================================
    hud.js — render layer untuk script.js (FiveM GTA V)
    ----------------------------------------------------------
-   Format data yang dibaca dari script.js:
+   Layout : kotak digital kanan-bawah, background transparan
+   Fitur  : RPM bar (20 segmen), chips, fuel/health, welcome
+   ----------------------------------------------------------
+   Format data dari script.js (element hidden #engine dst):
      engine     → "On" / "Off"
      speed      → "120 MPH" / "88 KMH" / "42 Knots"
-     rpm        → "0.6500 RPM"  (0-1, dinormalisasi)
+     rpm        → "0.6500 RPM"  (0-1, ternormalisasi)
      fuel       → "78.5%"
      health     → "92.0%"
      gear       → "4" / "0"  (0 = N)
@@ -12,8 +15,6 @@
      indicators → "On / Off"  (kiri / kanan)
      seatbelts  → "On" / "Off"
      odometer   → "48213.4 Miles"
-   ----------------------------------------------------------
-   Sound seatbelt dikontrol manual (tidak ada chime otomatis).
    ========================================================== */
 (function () {
   'use strict';
@@ -24,142 +25,98 @@
   const DEMO_MODE   = false;   // true = preview tanpa game
   const MAX_RPM     = 8000;
   const REDLINE_RPM = 6600;
-
-  const CX = 200, CY = 200, R = 136;
-  const START = 135, SWEEP = 270;
-  const CIRC  = 2 * Math.PI * R;
-  const ARC   = CIRC * (SWEEP / 360);
-  const SVGNS = 'http://www.w3.org/2000/svg';
+  const RPM_SEGS    = 20;      // jumlah segmen bar RPM
+  const WELCOME_TEXT = 'Selamat datang Bos Shaquille Carvinson';
   const $ = id => document.getElementById(id);
 
   /* =======================================================
      1. ELEMEN HUD
      ======================================================= */
-  const hud     = $('hud');
-  const dial    = $('dial');
-  const rpmFill = $('rpmFill');
-  const rpmTrk  = $('rpmTrack');
-  const marker  = $('marker');
-  const ticksG  = $('ticks');
-  const labelsG = $('labels');
+  const hud      = $('hud');
+  const vSpeed   = $('vSpeed');
+  const vRpm     = $('vRpm');
+  const vRpmMid  = $('vRpmMid');
+  const vGear    = $('vGear');
+  const vOdo     = $('vOdo');
+  const vFuel    = $('vFuel');
+  const vHealth  = $('vHealth');
+  const vUnit    = $('vUnit');
+  const fFuel    = $('fFuel');
+  const fHealth  = $('fHealth');
 
-  const vSpeed = $('vSpeed');
-  const vRpm   = $('vRpm');
-  const vGear  = $('vGear');
-  const vOdo   = $('vOdo');
-  const vFuel  = $('vFuel');
-  const vHealth= $('vHealth');
-  const vUnit  = $('vUnit');
-  const fFuel  = $('fFuel');
-  const fHealth= $('fHealth');
-
-  const chipEngine  = $('chipEngine');
-  const chipLights  = $('chipLights');
-  const chipBelt    = $('chipBelt');
-  const indLeft     = $('indLeft');
-  const indRight    = $('indRight');
-  const mFuel       = $('mFuel');
-  const mHealth     = $('mHealth');
-  const seatbeltWarn= $('seatbeltWarning');
-  const beltSound   = $('seatbeltSound');   // 🔊 audio manual
+  const chipEngine   = $('chipEngine');
+  const chipLights   = $('chipLights');
+  const chipBelt     = $('chipBelt');
+  const indLeft      = $('indLeft');
+  const indRight     = $('indRight');
+  const mFuel        = $('mFuel');
+  const mHealth      = $('mHealth');
+  const seatbeltWarn = $('seatbeltWarning');
+  const beltSound    = $('seatbeltSound');
+  const rpmBarsCont  = $('rpmBars');
 
   /* =======================================================
-     2. BANGUN TICK & LABEL
+     2. BANGUN SEGMEN BAR RPM (kotak-kotak)
      ======================================================= */
-  rpmTrk.style.strokeDasharray  = ARC + ' ' + CIRC;
-  rpmFill.style.strokeDasharray = '0 ' + CIRC;
-
-  const polar = (deg, r) => {
-    const a = deg * Math.PI / 180;
-    return [CX + r * Math.cos(a), CY + r * Math.sin(a)];
-  };
-  function mkLine(x1,y1,x2,y2,cls){
-    const l = document.createElementNS(SVGNS,'line');
-    l.setAttribute('x1',x1.toFixed(2));
-    l.setAttribute('y1',y1.toFixed(2));
-    l.setAttribute('x2',x2.toFixed(2));
-    l.setAttribute('y2',y2.toFixed(2));
-    l.setAttribute('class',cls);
-    return l;
-  }
-  for (let i=0;i<=8;i++){
-    const deg = START + SWEEP * i/8;
-    const [x1,y1]=polar(deg,108), [x2,y2]=polar(deg,124);
-    ticksG.appendChild(mkLine(x1,y1,x2,y2,'tick major'));
-    const [lx,ly]=polar(deg,90);
-    const t=document.createElementNS(SVGNS,'text');
-    t.setAttribute('x',lx.toFixed(2));
-    t.setAttribute('y',ly.toFixed(2));
-    t.setAttribute('text-anchor','middle');
-    t.setAttribute('dominant-baseline','middle');
-    t.setAttribute('class','label');
-    t.textContent=i;
-    labelsG.appendChild(t);
-  }
-  for (let i=0;i<8;i++){
-    for (let j=1;j<=4;j++){
-      const deg = START + SWEEP * (i + j/5)/8;
-      const [x1,y1]=polar(deg,117), [x2,y2]=polar(deg,124);
-      ticksG.appendChild(mkLine(x1,y1,x2,y2,'tick'));
+  let rpmSegs = [];
+  if (rpmBarsCont) {
+    rpmBarsCont.innerHTML = '';
+    for (let i = 0; i < RPM_SEGS; i++) {
+      const s = document.createElement('span');
+      s.className = 'seg' + (i >= 15 ? ' red' : '');
+      rpmBarsCont.appendChild(s);
     }
+    rpmSegs = Array.from(rpmBarsCont.children);
   }
 
   /* =======================================================
      3. SUMBER DATA (diisi oleh script.js)
      ======================================================= */
   const SRC = {
-    engine:$('engine'), speed:$('speed'), rpm:$('rpm'),
-    fuel:$('fuel'), health:$('health'), gear:$('gear'),
-    headlights:$('headlights'), indicators:$('indicators'),
-    seatbelts:$('seatbelts'), odometer:$('odometer')
+    engine:     $('engine'),
+    speed:      $('speed'),
+    rpm:        $('rpm'),
+    fuel:       $('fuel'),
+    health:     $('health'),
+    gear:       $('gear'),
+    headlights: $('headlights'),
+    indicators: $('indicators'),
+    seatbelts:  $('seatbelts'),
+    odometer:   $('odometer')
   };
   const txt = id => (SRC[id] && SRC[id].textContent || '').trim();
 
   /* ---------- Parser format script.js ---------- */
-
-  // "120 MPH" → 120
   function parseSpeed(){
     const m = /^(-?\d+(?:\.\d+)?)/.exec(txt('speed'));
     return m ? Math.max(0, parseFloat(m[1])) : 0;
   }
-
-  // "120 MPH" → "mph" | "88 KMH" → "km/h" | "42 Knots" → "kn"
   function parseSpeedUnit(){
     const t = txt('speed');
     if (/KMH/i.test(t))   return 'km/h';
     if (/Knots/i.test(t)) return 'kn';
     return 'mph';
   }
-
-  // "0.6500 RPM" (0-1) → 5200 RPM
   function parseRpm(){
     const m = /^(-?\d+(?:\.\d+)?)/.exec(txt('rpm'));
     if (!m) return 0;
     const raw = parseFloat(m[1]);
-    // script.js kirim nilai 0-1; kalau > 1 anggap RPM mentah
+    // script.js kirim 0-1 → kalikan MAX_RPM; kalau >1 anggap RPM mentah
     return raw <= 1 ? raw * MAX_RPM : raw;
   }
-
-  // "78.5%" → 78.5
   function parsePercent(id){
     const m = /^(-?\d+(?:\.\d+)?)/.exec(txt(id));
     return m ? Math.min(100, Math.max(0, parseFloat(m[1]))) : 0;
   }
-
-  // "4" → "4" | "0" → "N"
   function parseGear(){
     const t = txt('gear');
     if (!t) return 'N';
     if (t === '0') return 'N';
     return t.toUpperCase().slice(0,2);
   }
-
-  // "On" / "Off" / "High Beam" → boolean
   function parseBoolOnOff(id){
     return /^(on|high beam|true|1|yes)$/i.test(txt(id));
   }
-
-  // "On / Off" → 'left' | 'right' | 'both' | 'off'
   function parseIndicators(){
     const t = txt('indicators');
     if (!t) return 'off';
@@ -171,8 +128,6 @@
     if (R) return 'right';
     return 'off';
   }
-
-  // "48213.4 Miles" → 48213.4
   function parseOdometer(){
     const m = /^(-?\d+(?:\.\d+)?)/.exec(txt('odometer'));
     return m ? Math.max(0, parseFloat(m[1])) : 0;
@@ -195,7 +150,7 @@
   }
 
   /* =======================================================
-     4. DEMO AUTOPILOT (hanya kalau DEMO_MODE = true)
+     4. DEMO AUTOPILOT (hanya jika DEMO_MODE = true)
      ======================================================= */
   let demoT=0, dSpeed=0, dRpm=0, dFuel=78, dOdo=48213.4;
   const GEAR_TABLE = [
@@ -252,13 +207,13 @@
   const setText = (el,v)=>{ if (el && el.textContent!==v) el.textContent=v; };
 
   function updateView(s, dt){
-    const k  = Math.min(1, dt*8);   // jarum RPM (cepat)
-    const ks = Math.min(1, dt*4);   // angka speed/fuel (halus)
-    view.speed  = lerp(view.speed,  s.speed,  ks);
-    view.rpm    = lerp(view.rpm,    s.rpm,    k);
-    view.fuel   = lerp(view.fuel,   s.fuel,   ks);
-    view.health = lerp(view.health, s.health, ks);
-    view.odo    = lerp(view.odo,    s.odometer, ks);
+    const k  = Math.min(1, dt*8);   // RPM cepat
+    const ks = Math.min(1, dt*4);   // speed/fuel halus
+    view.speed     = lerp(view.speed,  s.speed,    ks);
+    view.rpm       = lerp(view.rpm,    s.rpm,      k);
+    view.fuel      = lerp(view.fuel,   s.fuel,     ks);
+    view.health    = lerp(view.health, s.health,   ks);
+    view.odo       = lerp(view.odo,    s.odometer, ks);
     view.gear        = s.gear;
     view.engine      = s.engine;
     view.headlights  = s.headlights;
@@ -270,33 +225,40 @@
   /* =======================================================
      6. RENDER
      ======================================================= */
-  let lastGear = null;
-  let lastBelt = null;
+  let lastGear    = null;
+  let lastBelt    = null;
+  let lastRpmLit  = -1;
 
   function render(){
-    /* --- RPM Ring --- */
+    /* --- Bar RPM (20 segmen kotak) --- */
     const rpmFrac = clamp(view.rpm / MAX_RPM, 0, 1);
-    rpmFill.style.strokeDasharray = (ARC*rpmFrac).toFixed(2)+' '+CIRC.toFixed(2);
+    const lit     = Math.round(rpmFrac * RPM_SEGS);
+    if (lit !== lastRpmLit) {
+      for (let i = 0; i < rpmSegs.length; i++) {
+        rpmSegs[i].classList.toggle('on', i < lit);
+      }
+      lastRpmLit = lit;
+    }
+    if (hud) hud.classList.toggle('redline', view.rpm >= REDLINE_RPM);
 
-    const deg = START + SWEEP*rpmFrac;
-    const rad = deg*Math.PI/180;
-    marker.setAttribute('transform',
-      'translate('+(CX+R*Math.cos(rad)).toFixed(2)+' '+
-                    (CY+R*Math.sin(rad)).toFixed(2)+')');
-    dial.classList.toggle('redline', view.rpm >= REDLINE_RPM);
-
-    /* --- Angka tengah --- */
+    /* --- Angka --- */
     setText(vSpeed, String(Math.round(view.speed)));
-    setText(vRpm,   String(Math.round(view.rpm/10)*10));
-    setText(vUnit,  view.speedUnit);
+    const rpmRounded = String(Math.round(view.rpm/10)*10);
+    setText(vRpm, rpmRounded);
+    if (vRpmMid) setText(vRpmMid, rpmRounded);
+    setText(vUnit, view.speedUnit);
 
-    /* --- Gear (animasi pop saat berubah) --- */
+    /* --- Gear (pop saat berubah) --- */
     if (view.gear !== lastGear){
-      const span = vGear.querySelector('span');
-      if (span) span.textContent = view.gear;
-      vGear.classList.remove('pop');
-      void vGear.offsetWidth;
-      vGear.classList.add('pop');
+      const span = vGear && vGear.querySelector('span');
+      if (span)             span.textContent = view.gear;
+      else if (vGear)       vGear.textContent = view.gear;
+
+      if (vGear) {
+        vGear.classList.remove('pop');
+        void vGear.offsetWidth;   // reflow supaya animasi replay
+        vGear.classList.add('pop');
+      }
       lastGear = view.gear;
     }
 
@@ -306,75 +268,44 @@
     /* --- Fuel & Health --- */
     const fuelPct   = clamp(view.fuel,   0, 100);
     const healthPct = clamp(view.health, 0, 100);
-    fFuel.style.width   = fuelPct+'%';
-    fHealth.style.width = healthPct+'%';
-    setText(vFuel,   Math.round(fuelPct)+'%');
-    setText(vHealth, Math.round(healthPct)+'%');
-    mFuel.classList.toggle('low',   fuelPct   <= 15);
-    mHealth.classList.toggle('low', healthPct <= 30);
+    if (fFuel)   fFuel.style.width   = fuelPct   + '%';
+    if (fHealth) fHealth.style.width = healthPct + '%';
+    setText(vFuel,   Math.round(fuelPct)   + '%');
+    setText(vHealth, Math.round(healthPct) + '%');
+    if (mFuel)   mFuel.classList.toggle('low',   fuelPct   <= 15);
+    if (mHealth) mHealth.classList.toggle('low', healthPct <= 30);
 
-    /* --- Chips --- */
-    chipEngine.classList.toggle('on', view.engine);
-    chipLights.classList.toggle('on', view.headlights);
-    chipBelt.classList.toggle('on',   view.seatbelts);
+    /* --- Chips (CSS: .active) --- */
+    if (chipEngine) chipEngine.classList.toggle('active', view.engine);
+    if (chipLights) chipLights.classList.toggle('active', view.headlights);
+    if (chipBelt)   chipBelt.classList.toggle('active', view.seatbelts);
 
-    /* --- Indikator sein --- */
-    const ind = view.indicators;
+    /* --- Indikator sein (CSS: .active) --- */
+    const ind  = view.indicators;
     const both = ind === 'both';
-    indLeft.classList.toggle('on',  both || ind === 'left');
-    indRight.classList.toggle('on', both || ind === 'right');
+    if (indLeft)  indLeft.classList.toggle('active',  both || ind === 'left');
+    if (indRight) indRight.classList.toggle('active', both || ind === 'right');
 
-    /* --- 🔔 SEATBELT: visual + sound manual --- */
+    /* --- Seatbelt: banner + sound manual --- */
     const beltOn = view.seatbelts;
     if (beltOn !== lastBelt){
       lastBelt = beltOn;
 
-      // Banner visual
-      if (seatbeltWarn) seatbeltWarn.classList.toggle('on', !beltOn);
+      if (seatbeltWarn) seatbeltWarn.classList.toggle('show', !beltOn);
 
-      // Sound manual (dikontrol dari <audio id="seatbeltSound">)
       if (beltSound) {
         if (beltOn) {
           beltSound.pause();
           beltSound.currentTime = 0;
         } else {
-          beltSound.play().catch(()=>{});   // .catch untuk autoplay policy
+          beltSound.play().catch(()=>{});
         }
       }
     }
   }
 
   /* =======================================================
-     7. PARALLAX 3D (mouse / sentuh)
-     ======================================================= */
-  const BASE_RX = 7;
-  function tiltTo(nx, ny){
-    hud.style.setProperty('--ry', (nx*11).toFixed(2)+'deg');
-    hud.style.setProperty('--rx', (BASE_RX - ny*9).toFixed(2)+'deg');
-  }
-  window.addEventListener('pointermove', e=>{
-    const nx = (e.clientX/window.innerWidth )*2 - 1;
-    const ny = (e.clientY/window.innerHeight)*2 - 1;
-    tiltTo(clamp(nx,-1,1), clamp(ny,-1,1));
-  }, { passive:true });
-  window.addEventListener('pointerleave', ()=>tiltTo(0,0), { passive:true });
-
-  /* Idle drift halus saat tidak ada input */
-  let idleTimer = null;
-  function idleTilt(){
-    const t = performance.now()/2600;
-    tiltTo(Math.sin(t)*0.35, Math.cos(t*0.8)*0.3);
-    idleTimer = requestAnimationFrame(idleTilt);
-  }
-  window.addEventListener('pointermove', ()=>{
-    if (idleTimer){ cancelAnimationFrame(idleTimer); idleTimer = null; }
-    clearTimeout(window.__idleT);
-    window.__idleT = setTimeout(()=>{ if (!idleTimer) idleTilt(); }, 2600);
-  }, { passive:true });
-  idleTilt();
-
-  /* =======================================================
-     8. LOOP UTAMA
+     7. LOOP UTAMA
      ======================================================= */
   let last = performance.now();
   function loop(now){
@@ -389,7 +320,7 @@
   requestAnimationFrame(loop);
 
   /* =======================================================
-     9. API PUBLIK
+     8. API PUBLIK
         window.HUD.update({ speed:"120 MPH", rpm:"0.65 RPM", ... })
      ======================================================= */
   window.HUD = {
@@ -398,31 +329,154 @@
       Object.keys(data).forEach(k=>{
         const el = SRC[k];
         if (!el) return;
-        const v = typeof data[k] === 'boolean' ? (data[k]?'On':'Off') : data[k];
+        const v = typeof data[k] === 'boolean'
+                ? (data[k] ? 'On' : 'Off')
+                : data[k];
         el.textContent = v;
       });
     }
   };
 
   /* =======================================================
-     10. NUI MESSAGE HANDLER (FiveM)
-         Dukung kontrol sound manual via SendNUIMessage
+     9. 🔔 SOUND SEATBELT — kontrol dari Lua
+        SendNUIMessage({ type = 'seatbeltSound', on = true/false })
      ======================================================= */
   window.addEventListener('message', e => {
     const d = e.data;
     if (!d) return;
 
-    // Kontrol sound seatbelt dari Lua
+    /* seatbelt manual */
     if (d.type === 'seatbeltSound' && beltSound){
-      if (d.on) { beltSound.pause(); beltSound.currentTime = 0; }
-      else      { beltSound.play().catch(()=>{}); }
+      if (d.on) {
+        beltSound.pause();
+        beltSound.currentTime = 0;
+      } else {
+        beltSound.play().catch(()=>{});
+      }
       return;
     }
 
-    // Update data HUD massal via NUI
+    /* update massal dari Lua */
     if (d.type === 'hudUpdate' && d.data) {
       window.HUD.update(d.data);
+      return;
+    }
+
+    /* 🔊 trigger welcome manual */
+    if (d.action === 'welcome' || d.type === 'welcome') {
+      speakWelcome(true);
+      return;
+    }
+    if (d.action === 'resetWelcome') {
+      welcomeDone = false;
+      return;
     }
   });
+
+  /* =======================================================
+     10. 🔊 WELCOME SOUND
+         "Selamat datang Bos Shaquille Carvinson"
+         Cara pakai:
+           - Otomatis saat NUI load
+           - window.playWelcomeSound(true)   → manual
+           - SendNUIMessage({ action = 'welcome' })  → dari Lua
+           - SendNUIMessage({ action = 'resetWelcome' }) → reset
+     ======================================================= */
+  let welcomeDone = false;
+  let audioCtxUnlocked = false;
+
+  /* Chime pembuka — Web Audio API (tanpa file) */
+  function playChime(){
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+
+      // beberapa browser butuh resume dulu
+      if (ctx.state === 'suspended') ctx.resume().catch(()=>{});
+
+      const notes = [
+        { freq: 587.33, start: 0.00, dur: 0.35 },  // D5
+        { freq: 880.00, start: 0.18, dur: 0.55 }   // A5
+      ];
+      notes.forEach(n => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = n.freq;
+
+        const t0 = ctx.currentTime + n.start;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + n.dur);
+
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + n.dur + 0.05);
+      });
+    } catch(e){ /* diamkan */ }
+  }
+
+  /* TTS: ucapkan sambutan */
+  function speakWelcome(force){
+    if (welcomeDone && !force) return;
+    welcomeDone = true;
+
+    playChime();
+
+    setTimeout(() => {
+      if (!('speechSynthesis' in window)) return;
+
+      const u = new SpeechSynthesisUtterance(WELCOME_TEXT);
+      u.lang   = 'id-ID';
+      u.rate   = 0.95;
+      u.pitch  = 1.05;
+      u.volume = 1.0;
+
+      const voices  = speechSynthesis.getVoices();
+      const idVoice = voices.find(v => /id[-_]ID/i.test(v.lang))
+                   || voices.find(v => /indonesia/i.test(v.name));
+      if (idVoice) u.voice = idVoice;
+
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    }, 500);
+  }
+
+  /* Preload daftar voice */
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = () => {};
+    speechSynthesis.getVoices();
+  }
+
+  /* Auto-play saat NUI pertama kali dibuka */
+  window.addEventListener('load', () => {
+    setTimeout(() => speakWelcome(false), 1200);
+  });
+
+  /* Fallback: unlock AudioContext saat interaksi pertama
+     (untuk bypass autoplay policy di browser biasa) */
+  function unlockAudio(){
+    if (audioCtxUnlocked) return;
+    audioCtxUnlocked = true;
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) {
+        const c = new Ctx();
+        if (c.state === 'suspended') c.resume();
+      }
+      // putar speech sekali tanpa suara untuk unlock
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(' ');
+        u.volume = 0;
+        speechSynthesis.speak(u);
+      }
+    } catch(e){}
+  }
+  window.addEventListener('pointerdown', unlockAudio, { once:true });
+  window.addEventListener('keydown',     unlockAudio, { once:true });
+
+  /* API global supaya bisa dipanggil manual dari script lain */
+  window.playWelcomeSound = function(force){ speakWelcome(!!force); };
 
 })();
