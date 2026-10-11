@@ -34,10 +34,11 @@
     --bg-chip:  rgba(25, 80, 155, .4);
     --bg-track: rgba(10, 35, 75, .6);
 
-    /* ===== UKURAN ===== */
+    /* ===== UKURAN & POSISI ===== */
     --hud-width:  380px;
     --hud-right:  18px;
-    --hud-bottom: 18px;
+    /* ⬆️ NAIKKAN POSISI BIAR GAK NABRAK UI BAWAAN GTA */
+    --hud-bottom: 120px;
   }
 
   /* =========================================================
@@ -70,7 +71,7 @@
   }
 
   /* =========================================================
-     SCENE — pojok kanan bawah
+     SCENE — pojok kanan bawah (dinaikkan)
      ========================================================= */
   .scene {
     position: fixed;
@@ -92,9 +93,6 @@
     background: var(--bg-panel) !important;
     background-color: var(--bg-panel) !important;
 
-    /* ⛔ TIDAK ADA backdrop-filter */
-    /* ⛔ TIDAK ADA box-shadow hitam */
-
     border: 1px solid var(--line);
     border-radius: 11px;
 
@@ -107,7 +105,6 @@
     position: relative;
     overflow: hidden;
 
-    /* hanya glow cyan, tidak ada hitam */
     box-shadow:
       0 0 18px -4px rgba(25, 230, 255, .5),
       inset 0 0 16px -8px rgba(25, 230, 255, .35);
@@ -592,7 +589,7 @@
     :root {
       --hud-width: 330px;
       --hud-right: 14px;
-      --hud-bottom: 14px;
+      --hud-bottom: 110px;
     }
   }
 
@@ -600,7 +597,7 @@
     :root {
       --hud-width: 280px;
       --hud-right: 10px;
-      --hud-bottom: 10px;
+      --hud-bottom: 100px;
     }
     .speed-num { font-size: 36px; }
     .rpm-value { font-size: 18px; }
