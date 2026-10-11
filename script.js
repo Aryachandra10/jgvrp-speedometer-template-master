@@ -1,10 +1,12 @@
 /* ==========================================================
    script.js — jembatan data game -> HUD
-   Nama fungsi & parameter SAMA seperti versi asli, jadi
-   pemanggil dari sisi game tidak perlu diubah.
-   Perbaikan: aman dipanggil sebelum DOM siap, aman terhadap
-   nilai undefined/NaN, nilai dibatasi ke rentang valid, dan
-   DOM hanya disentuh kalau teksnya benar-benar berubah.
+   ----------------------------------------------------------
+   - Fungsi & parameter SAMA seperti versi asli
+   - Aman dipanggil sebelum DOM siap
+   - Aman terhadap undefined/NaN
+   - Nilai dibatasi ke rentang valid
+   - DOM hanya disentuh kalau teksnya benar-benar berubah
+   - 🎮 NUI listener untuk FiveM (SendNUIMessage)
    ========================================================== */
 
 let elements = {};
@@ -155,4 +157,71 @@ function setOdometer(distance) {
 // Cache elemen begitu DOM siap (getEl tetap bekerja walau lebih awal)
 document.addEventListener('DOMContentLoaded', () => {
     ELEMENT_IDS.forEach(getEl);
+});
+
+/* ==========================================================
+   🎮 NUI MESSAGE LISTENER — jembatan dari FiveM client.lua
+   ----------------------------------------------------------
+   Lua kirim: SendNUIMessage({ type = 'updateHUD', speed = 25.4, ... })
+   Listener ini panggil fungsi setter yang sudah ada.
+   Tidak mengubah fungsi asli di atas.
+   ========================================================== */
+window.addEventListener('message', (event) => {
+    const data = event.data;
+    if (!data || data.type !== 'updateHUD') return;
+
+    // Engine (boolean)
+    if (data.engine !== undefined) setEngine(data.engine);
+
+    // Speed (meter/detik — auto convert sesuai speedMode)
+    if (data.speed !== undefined) setSpeed(data.speed);
+
+    // RPM (0-1)
+    if (data.rpm !== undefined) setRPM(data.rpm);
+
+    // Fuel (0-1)
+    if (data.fuel !== undefined) setFuel(data.fuel);
+
+    // Health (0-1)
+    if (data.health !== undefined) setHealth(data.health);
+
+    // Gear (angka, 0 = N)
+    if (data.gear !== undefined) setGear(data.gear);
+
+    // Headlights (0 = Off, 1 = On, 2 = High Beam)
+    if (data.headlights !== undefined) setHeadlights(data.headlights);
+
+    // Indicators (boolean terpisah kiri & kanan)
+    if (data.indicatorLeft  !== undefined) setLeftIndicator(data.indicatorLeft);
+    if (data.indicatorRight !== undefined) setRightIndicator(data.indicatorRight);
+
+    // Seatbelts (boolean)
+    if (data.seatbelts !== undefined) setSeatbelts(data.seatbelts);
+
+    // Odometer (angka, dalam miles)
+    if (data.odometer !== undefined) setOdometer(data.odometer);
+
+    // Speed mode (opsional, kalau mau ganti unit dari Lua)
+    if (data.speedMode !== undefined) setSpeedMode(data.speedMode);
+});
+
+/* ==========================================================
+   🔊 SOUND SEATBELT (opsional — dikontrol dari Lua)
+   ----------------------------------------------------------
+   Untuk kontrol sound manual dari client.lua via:
+   SendNUIMessage({ type = 'seatbeltSound', on = false })
+   ========================================================== */
+window.addEventListener('message', (event) => {
+    const data = event.data;
+    if (!data || data.type !== 'seatbeltSound') return;
+
+    const snd = document.getElementById('seatbeltSound');
+    if (!snd) return;
+
+    if (data.on) {
+        snd.pause();
+        snd.currentTime = 0;
+    } else {
+        snd.play().catch(() => {});
+    }
 });
