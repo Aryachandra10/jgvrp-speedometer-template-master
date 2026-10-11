@@ -28,22 +28,16 @@
     --line:      rgba(25, 230, 255, .5);
     --line-soft: rgba(25, 230, 255, .3);
 
-    /* ===== BACKGROUND BIRU (TANPA HITAM) ===== */
     --bg-panel: rgba(15, 55, 120, .45);
     --bg-cell:  rgba(20, 70, 140, .4);
     --bg-chip:  rgba(25, 80, 155, .4);
     --bg-track: rgba(10, 35, 75, .6);
 
-    /* ===== UKURAN & POSISI ===== */
     --hud-width:  380px;
     --hud-right:  18px;
-    /* ⬆️ NAIKKAN POSISI BIAR GAK NABRAK UI BAWAAN GTA */
     --hud-bottom: 120px;
   }
 
-  /* =========================================================
-     ROOT
-     ========================================================= */
   html,
   body {
     width: 100%;
@@ -71,7 +65,7 @@
   }
 
   /* =========================================================
-     SCENE — pojok kanan bawah (dinaikkan)
+     SCENE
      ========================================================= */
   .scene {
     position: fixed;
@@ -82,10 +76,19 @@
 
     background: transparent !important;
     pointer-events: none;
+
+    opacity: 0;
+    transform: scale(.92) translateY(10px);
+    transition: opacity .55s ease, transform .55s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .scene.hud-booted {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 
   /* =========================================================
-     HUD PANEL — background BIRU, TANPA blur, TANPA shadow hitam
+     HUD PANEL
      ========================================================= */
   .hud {
     width: 100%;
@@ -95,7 +98,6 @@
 
     border: 1px solid var(--line);
     border-radius: 11px;
-
     padding: 7px;
 
     display: grid;
@@ -118,150 +120,80 @@
       inset 0 0 16px -8px rgba(255, 59, 92, .4);
   }
 
-  /* =========================================================
-     BAR (top & bottom)
-     ========================================================= */
   .hud-bar {
     display: flex;
     align-items: center;
     gap: 7px;
-
     padding: 6px 8px;
-
     background: var(--bg-cell) !important;
     border: 1px solid var(--line-soft);
     border-radius: 8px;
   }
 
-  .hud-bar--top {
-    justify-content: space-between;
-  }
+  .hud-bar--top { justify-content: space-between; }
 
-  /* =========================================================
-     SEIN KIRI / KANAN
-     ========================================================= */
-  .turn-signals {
-    display: flex;
-    gap: 5px;
-  }
-
+  .turn-signals { display: flex; gap: 5px; }
   .arrow {
-    width: 22px;
-    height: 22px;
+    width: 22px; height: 22px;
     border-radius: 6px;
-
     background: rgba(10, 35, 75, .5) !important;
     border: 1px solid var(--line-soft);
     position: relative;
     transition: .2s;
   }
-
   .arrow::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    margin: auto;
-    width: 0;
-    height: 0;
+    content: ""; position: absolute; inset: 0; margin: auto;
+    width: 0; height: 0;
     border-top: 4.5px solid transparent;
     border-bottom: 4.5px solid transparent;
   }
-
-  .arrow.left::before {
-    border-right: 8px solid var(--dim);
-    transform: translateX(-1px);
-  }
-
-  .arrow.right::before {
-    border-left: 8px solid var(--dim);
-    transform: translateX(1px);
-  }
-
+  .arrow.left::before { border-right: 8px solid var(--dim); transform: translateX(-1px); }
+  .arrow.right::before { border-left: 8px solid var(--dim); transform: translateX(1px); }
   .arrow.active {
     background: rgba(25, 230, 255, .25) !important;
     border-color: var(--cyan);
     box-shadow: 0 0 12px rgba(25, 230, 255, .9);
   }
+  .arrow.left.active::before { border-right-color: var(--cyan); filter: drop-shadow(0 0 4px var(--cyan)); }
+  .arrow.right.active::before { border-left-color: var(--cyan); filter: drop-shadow(0 0 4px var(--cyan)); }
 
-  .arrow.left.active::before {
-    border-right-color: var(--cyan);
-    filter: drop-shadow(0 0 4px var(--cyan));
-  }
-
-  .arrow.right.active::before {
-    border-left-color: var(--cyan);
-    filter: drop-shadow(0 0 4px var(--cyan));
-  }
-
-  /* =========================================================
-     SEATBELT WARNING
-     ========================================================= */
   .seatbelt-warning {
     display: none;
     align-items: center;
     gap: 4px;
     padding: 3px 9px;
     border-radius: 5px;
-
     background: rgba(255, 59, 92, .25) !important;
     border: 1px solid rgba(255, 59, 92, .85);
-
     color: #ffe6ea;
-    font-size: 9px;
-    font-weight: 800;
+    font-size: 9px; font-weight: 800;
     letter-spacing: 1.1px;
     text-shadow: 0 0 6px rgba(255, 59, 92, 1);
     box-shadow: 0 0 12px -2px rgba(255, 59, 92, .85);
-
     animation: blink 1s steps(2, start) infinite;
   }
+  .seatbelt-warning.show { display: flex; }
+  .seatbelt-warning .icon { font-size: 10px; }
+  @keyframes blink { 50% { opacity: .35; } }
 
-  .seatbelt-warning.show {
-    display: flex;
-  }
-
-  .seatbelt-warning .icon {
-    font-size: 10px;
-  }
-
-  @keyframes blink {
-    50% { opacity: .35; }
-  }
-
-  /* =========================================================
-     CHIPS
-     ========================================================= */
-  .chips {
-    display: flex;
-    gap: 4px;
-  }
-
+  .chips { display: flex; gap: 4px; }
   .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    display: inline-flex; align-items: center; gap: 4px;
     padding: 3.5px 8px;
     border-radius: 999px;
-
     background: var(--bg-chip) !important;
     border: 1px solid var(--line-soft);
-
     color: var(--dim);
-    font-size: 8.5px;
-    font-weight: 800;
+    font-size: 8.5px; font-weight: 800;
     letter-spacing: 1px;
-
     transition: .25s;
   }
-
   .chip i {
-    width: 5.5px;
-    height: 5.5px;
+    width: 5.5px; height: 5.5px;
     border-radius: 50%;
     background: #3a4b63;
     transition: .25s;
   }
-
   .chip.active {
     color: #e9ffff;
     border-color: rgba(25, 230, 255, 1);
@@ -271,32 +203,16 @@
       0 0 12px -2px rgba(25, 230, 255, .95),
       inset 0 0 8px -3px rgba(25, 230, 255, .6);
   }
-
-  .chip.active i {
-    background: var(--cyan);
-    box-shadow: 0 0 7px var(--cyan);
-  }
-
+  .chip.active i { background: var(--cyan); box-shadow: 0 0 7px var(--cyan); }
   .chip.warn {
     border-color: rgba(255, 59, 92, .85);
     color: #ffe6ea;
     background: rgba(255, 59, 92, .2) !important;
     box-shadow: 0 0 12px -2px rgba(255, 59, 92, .85);
   }
+  .chip.warn i { background: var(--red); box-shadow: 0 0 6px var(--red); }
 
-  .chip.warn i {
-    background: var(--red);
-    box-shadow: 0 0 6px var(--red);
-  }
-
-  /* =========================================================
-     TENGAH : SPEED + RPM
-     ========================================================= */
-  .hud-mid {
-    display: grid;
-    grid-template-columns: 1.3fr 1fr;
-    gap: 7px;
-  }
+  .hud-mid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 7px; }
 
   .cell {
     background: var(--bg-cell) !important;
@@ -306,96 +222,64 @@
     position: relative;
     overflow: hidden;
   }
-
   .cell-label {
-    font-size: 8px;
-    letter-spacing: 1.6px;
-    color: #a8c4e0;
-    font-weight: 800;
+    font-size: 8px; letter-spacing: 1.6px;
+    color: #a8c4e0; font-weight: 800;
     margin-bottom: 3px;
     text-shadow: 0 0 4px rgba(0, 0, 0, .9);
   }
 
-  /* ---------- SPEED ---------- */
   .speed-cell {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
     text-align: center;
     min-height: 92px;
   }
-
   .speed-num {
-    font-size: 46px;
-    font-weight: 800;
-    line-height: .95;
-    letter-spacing: -1.8px;
-
+    font-size: 46px; font-weight: 800;
+    line-height: .95; letter-spacing: -1.8px;
     background: linear-gradient(180deg, #ffffff 0%, #7fdcff 60%, #19e6ff 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-
     filter:
       drop-shadow(0 0 10px rgba(25, 230, 255, 1))
       drop-shadow(0 0 2px rgba(0, 0, 0, .95));
-
     font-variant-numeric: tabular-nums;
   }
-
   .speed-unit {
     margin-top: 1px;
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: #a8c4e0;
-    font-weight: 800;
+    font-size: 9px; letter-spacing: 3px;
+    color: #a8c4e0; font-weight: 800;
     text-shadow: 0 0 4px rgba(0, 0, 0, .9);
   }
-
   .speed-sub {
     margin-top: 3px;
-    font-size: 8px;
-    letter-spacing: 1.1px;
+    font-size: 8px; letter-spacing: 1.1px;
     color: #a8c4e0;
     text-shadow: 0 0 4px rgba(0, 0, 0, .9);
   }
-
   .speed-sub b {
-    color: var(--cyan);
-    font-weight: 800;
+    color: var(--cyan); font-weight: 800;
     text-shadow: 0 0 6px rgba(25, 230, 255, 1);
   }
 
-  /* ---------- RPM ---------- */
-  .rpm-cell {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
+  .rpm-cell { display: flex; flex-direction: column; justify-content: center; }
   .rpm-value {
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -.5px;
-    color: #fff;
+    font-size: 22px; font-weight: 800;
+    letter-spacing: -.5px; color: #fff;
     font-variant-numeric: tabular-nums;
     line-height: 1;
     text-shadow:
       0 0 9px rgba(25, 230, 255, .95),
       0 0 2px rgba(0, 0, 0, .95);
   }
-
   .rpm-value small {
-    font-size: 7.5px;
-    color: #a8c4e0;
-    letter-spacing: 1.8px;
-    font-weight: 700;
-    margin-left: 4px;
-    vertical-align: middle;
+    font-size: 7.5px; color: #a8c4e0;
+    letter-spacing: 1.8px; font-weight: 700;
+    margin-left: 4px; vertical-align: middle;
     text-shadow: 0 0 3px rgba(0, 0, 0, .9);
   }
-
   .rpm-bars {
     display: grid;
     grid-template-columns: repeat(20, 1fr);
@@ -403,183 +287,424 @@
     margin-top: 6px;
     height: 12px;
   }
-
   .rpm-bars .seg {
     background: rgba(60, 100, 160, .4);
     border-radius: 1.5px;
     transition: .15s;
   }
-
   .rpm-bars .seg.on {
     background: linear-gradient(180deg, var(--cyan), var(--blue));
     box-shadow: 0 0 6px rgba(25, 230, 255, 1);
   }
-
   .rpm-bars .seg.red.on {
     background: linear-gradient(180deg, var(--amber), var(--red));
     box-shadow: 0 0 6px rgba(255, 59, 92, 1);
   }
 
-  /* ---------- GEAR ---------- */
   .gear-box {
     margin-top: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between;
     padding: 4px 8px;
-
     background: rgba(10, 35, 75, .5) !important;
     border: 1px solid var(--line-soft);
     border-radius: 6px;
     box-shadow: inset 0 0 10px -4px rgba(25, 230, 255, .6);
   }
-
   .gear-box .lbl {
-    font-size: 8px;
-    letter-spacing: 1.6px;
-    color: #a8c4e0;
-    font-weight: 800;
+    font-size: 8px; letter-spacing: 1.6px;
+    color: #a8c4e0; font-weight: 800;
     text-shadow: 0 0 4px rgba(0, 0, 0, .9);
   }
-
   .gear-box .val {
-    font-size: 17px;
-    font-weight: 800;
-    color: var(--cyan);
-    letter-spacing: .4px;
-    line-height: 1;
+    font-size: 17px; font-weight: 800;
+    color: var(--cyan); letter-spacing: .4px;
+    line-height: 1; min-width: 19px; text-align: center;
+    display: inline-block;
     text-shadow:
       0 0 10px rgba(25, 230, 255, 1),
       0 0 2px rgba(0, 0, 0, .95);
-    min-width: 19px;
-    text-align: center;
-    display: inline-block;
   }
-
-  .gear-box .val.pop {
-    animation: gearPop .28s ease-out;
-  }
-
+  .gear-box .val.pop { animation: gearPop .28s ease-out; }
   @keyframes gearPop {
     0%   { transform: scale(.7); }
     60%  { transform: scale(1.15); }
     100% { transform: scale(1); }
   }
 
-  /* =========================================================
-     BAR BAWAH : ODO + FUEL + HEALTH
-     ========================================================= */
   .hud-bar--bottom {
     display: grid;
     grid-template-columns: auto 1fr 1fr;
     gap: 7px;
     align-items: center;
   }
-
   .odo {
-    display: flex;
-    align-items: baseline;
-    gap: 3px;
+    display: flex; align-items: baseline; gap: 3px;
     padding: 4px 8px;
-
     background: rgba(10, 35, 75, .5) !important;
     border: 1px solid var(--line-soft);
     border-radius: 6px;
-
     font-variant-numeric: tabular-nums;
   }
-
   .odo small {
-    font-size: 7px;
-    letter-spacing: 1.6px;
-    color: #a8c4e0;
-    font-weight: 800;
+    font-size: 7px; letter-spacing: 1.6px;
+    color: #a8c4e0; font-weight: 800;
     text-shadow: 0 0 3px rgba(0, 0, 0, .9);
   }
-
   .odo span {
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: .5px;
-    color: #fff;
+    font-size: 12px; font-weight: 800;
+    letter-spacing: .5px; color: #fff;
     text-shadow:
       0 0 7px rgba(25, 230, 255, .9),
       0 0 2px rgba(0, 0, 0, .95);
   }
-
-  .odo #vOdoUnit {
-    color: #a8c4e0;
-    font-weight: 700;
-  }
+  .odo #vOdoUnit { color: #a8c4e0; font-weight: 700; }
 
   .meter {
-    display: flex;
-    flex-direction: column;
-    gap: 2.5px;
+    display: flex; flex-direction: column; gap: 2.5px;
     padding: 4px 8px;
-
     background: rgba(10, 35, 75, .5) !important;
     border: 1px solid var(--line-soft);
     border-radius: 6px;
   }
-
   .meter-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    font-size: 7px;
-    letter-spacing: 1.6px;
-    color: #a8c4e0;
-    font-weight: 800;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 7px; letter-spacing: 1.6px;
+    color: #a8c4e0; font-weight: 800;
     text-shadow: 0 0 3px rgba(0, 0, 0, .9);
   }
-
   .meter-head b {
-    color: #fff;
-    font-size: 10px;
+    color: #fff; font-size: 10px;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0;
     text-shadow: 0 0 6px rgba(25, 230, 255, .8);
   }
-
   .track {
     height: 4px;
     background: var(--bg-track) !important;
     border-radius: 2px;
     overflow: hidden;
   }
-
   .fill {
-    height: 100%;
-    width: 0%;
-
+    height: 100%; width: 0%;
     background: linear-gradient(90deg, var(--cyan), var(--blue));
     box-shadow: 0 0 8px rgba(25, 230, 255, 1);
-
     transition: width .3s ease;
   }
-
   .meter.health .fill {
     background: linear-gradient(90deg, var(--green), var(--cyan));
     box-shadow: 0 0 8px rgba(37, 208, 125, .95);
   }
-
   .meter.low .fill {
     background: linear-gradient(90deg, var(--amber), var(--red)) !important;
     box-shadow: 0 0 8px rgba(255, 59, 92, 1) !important;
   }
-
   .meter.low .meter-head b {
     color: var(--red);
     text-shadow: 0 0 6px rgba(255, 59, 92, 1);
   }
 
+  .data-source[hidden] { display: none !important; }
+
   /* =========================================================
-     DATA SOURCE hidden
+     🤖 BOOT OVERLAY
      ========================================================= */
-  .data-source[hidden] {
-    display: none !important;
+  .boot-overlay {
+    position: fixed;
+    right: var(--hud-right);
+    bottom: var(--hud-bottom);
+    width: var(--hud-width);
+
+    background: rgba(5, 20, 45, .92) !important;
+    border: 1px solid rgba(25, 230, 255, .7);
+    border-radius: 11px;
+
+    padding: 16px 14px;
+
+    z-index: 99999;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity .5s ease, transform .5s ease;
+
+    overflow: hidden;
+
+    box-shadow:
+      0 0 24px -4px rgba(25, 230, 255, .8),
+      inset 0 0 30px -10px rgba(25, 230, 255, .4);
+
+    pointer-events: none;
+  }
+
+  .boot-overlay.hide {
+    opacity: 0;
+    transform: scale(.9) translateY(8px);
+    pointer-events: none;
+  }
+
+  .boot-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(25, 230, 255, .08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(25, 230, 255, .08) 1px, transparent 1px);
+    background-size: 16px 16px;
+    pointer-events: none;
+    opacity: .7;
+  }
+
+  .boot-scanline {
+    position: absolute;
+    left: 0; right: 0;
+    height: 40px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(25, 230, 255, .35) 50%,
+      transparent 100%
+    );
+    animation: scanMove 1.6s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes scanMove {
+    0%   { top: -40px; }
+    100% { top: 100%; }
+  }
+
+  .boot-core {
+    width: 90px;
+    height: 90px;
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+
+  .boot-core svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+
+  .boot-ring-outer {
+    fill: none;
+    stroke: rgba(25, 230, 255, .8);
+    stroke-width: 2;
+    stroke-dasharray: 10 6;
+    transform-origin: 50% 50%;
+    animation: spinCW 4s linear infinite;
+  }
+
+  .boot-ring-mid {
+    fill: none;
+    stroke: rgba(25, 230, 255, .5);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 4;
+    transform-origin: 50% 50%;
+    animation: spinCCW 2.4s linear infinite;
+  }
+
+  .boot-hex {
+    fill: none;
+    stroke: rgba(25, 230, 255, 1);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 6px rgba(25, 230, 255, .9));
+  }
+
+  .boot-core-dot {
+    fill: rgba(25, 230, 255, 1);
+    filter: drop-shadow(0 0 10px rgba(25, 230, 255, 1));
+    animation: corePulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes spinCW  { to { transform: rotate(360deg); } }
+  @keyframes spinCCW { to { transform: rotate(-360deg); } }
+  @keyframes corePulse {
+    0%, 100% { opacity: 1;  r: 6; }
+    50%      { opacity: .4; r: 9; }
+  }
+
+  .boot-text {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #9ae6ff;
+    text-shadow:
+      0 0 8px rgba(25, 230, 255, 1),
+      0 0 2px rgba(0, 0, 0, .9);
+    text-align: center;
+    min-height: 14px;
+    z-index: 2;
+
+    animation: textFlicker .15s steps(2, start) infinite;
+  }
+
+  @keyframes textFlicker {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .85; }
+  }
+
+  .boot-progress {
+    width: 100%;
+    height: 5px;
+    background: rgba(10, 35, 75, .8);
+    border: 1px solid rgba(25, 230, 255, .35);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+  }
+
+  .boot-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #19e6ff, #4aa8ff, #19e6ff);
+    background-size: 200% 100%;
+    box-shadow:
+      0 0 10px rgba(25, 230, 255, 1),
+      inset 0 0 4px rgba(255, 255, 255, .5);
+    animation: progressShine 1.5s linear infinite;
+    transition: width .12s linear;
+  }
+
+  @keyframes progressShine {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .boot-stats {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: #6f9cc0;
+    z-index: 2;
+  }
+
+  .boot-stats span {
+    text-shadow: 0 0 4px rgba(0, 0, 0, .9);
+  }
+
+  .boot-overlay.glitch {
+    animation: glitchShake .12s linear 3;
+  }
+
+  @keyframes glitchShake {
+    0%   { transform: translate(0, 0); }
+    25%  { transform: translate(-2px, 1px); }
+    50%  { transform: translate(2px, -1px); }
+    75%  { transform: translate(-1px, 2px); }
+    100% { transform: translate(0, 0); }
+  }
+
+  /* =========================================================
+     🔊 WELCOME BANNER (muncul setelah boot)
+     ========================================================= */
+  .welcome-banner {
+    position: fixed;
+    right: var(--hud-right);
+    bottom: calc(var(--hud-bottom) + 10px);
+    width: var(--hud-width);
+
+    background: rgba(5, 20, 45, .85);
+    border: 1px solid rgba(25, 230, 255, .7);
+    border-radius: 10px;
+
+    padding: 12px 14px;
+
+    z-index: 99998;
+
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity .5s ease, transform .5s cubic-bezier(.22, 1, .36, 1);
+
+    box-shadow:
+      0 0 24px -4px rgba(25, 230, 255, .8),
+      inset 0 0 20px -8px rgba(25, 230, 255, .4);
+
+    pointer-events: none;
+
+    overflow: hidden;
+  }
+
+  .welcome-banner.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .welcome-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(25, 230, 255, .06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(25, 230, 255, .06) 1px, transparent 1px);
+    background-size: 12px 12px;
+    pointer-events: none;
+    opacity: .6;
+  }
+
+  .welcome-line-1 {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #6f9cc0;
+    font-weight: 800;
+    text-shadow: 0 0 4px rgba(0, 0, 0, .9);
+    z-index: 1;
+  }
+
+  .welcome-line-2 {
+    font-size: 17px;
+    letter-spacing: .5px;
+    color: #fff;
+    font-weight: 800;
+
+    background: linear-gradient(90deg, #ffffff, #7fdcff, #19e6ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+
+    filter:
+      drop-shadow(0 0 8px rgba(25, 230, 255, .9))
+      drop-shadow(0 0 2px rgba(0, 0, 0, .95));
+
+    z-index: 1;
+  }
+
+  .welcome-line-3 {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    color: #19e6ff;
+    font-weight: 800;
+    text-shadow: 0 0 6px rgba(25, 230, 255, 1);
+    z-index: 1;
+  }
+
+  .welcome-banner::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #19e6ff, transparent);
+    animation: welcomePulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes welcomePulse {
+    0%, 100% { opacity: .3; }
+    50%      { opacity: 1; }
   }
 
   /* =========================================================
@@ -615,10 +740,58 @@
 </head>
 <body>
 
-<div class="scene">
+<!-- ============================================================
+     🤖 BOOT OVERLAY
+     ============================================================ -->
+<div class="boot-overlay" id="bootOverlay">
+
+  <div class="boot-scanline"></div>
+
+  <div class="boot-core">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="boot-ring-outer" cx="50" cy="50" r="42"/>
+      <circle class="boot-ring-mid" cx="50" cy="50" r="33"/>
+      <polygon class="boot-hex"
+               points="50,20 76,35 76,65 50,80 24,65 24,35"/>
+      <line x1="50" y1="30" x2="50" y2="70"
+            stroke="rgba(25,230,255,.6)" stroke-width="1"/>
+      <line x1="30" y1="50" x2="70" y2="50"
+            stroke="rgba(25,230,255,.6)" stroke-width="1"/>
+      <circle class="boot-core-dot" cx="50" cy="50" r="6"/>
+    </svg>
+  </div>
+
+  <div class="boot-text" id="bootText">INITIALIZING AI CORE...</div>
+
+  <div class="boot-progress">
+    <div class="boot-progress-fill" id="bootProgressFill"></div>
+  </div>
+
+  <div class="boot-stats">
+    <span id="bootCpu">CPU: --%</span>
+    <span id="bootMem">MEM: --%</span>
+    <span id="bootNet">NET: OK</span>
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     🔊 WELCOME BANNER
+     ============================================================ -->
+<div class="welcome-banner" id="welcomeBanner">
+  <div class="welcome-line-1">WELCOME MESSAGE</div>
+  <div class="welcome-line-2">SELAMAT DATANG, BOS</div>
+  <div class="welcome-line-3">SHAQUILLE CARVINSON</div>
+</div>
+
+
+<!-- ============================================================
+     HUD UTAMA
+     ============================================================ -->
+<div class="scene" id="scene">
   <main class="hud" id="hud">
 
-    <!-- ================= BAR ATAS ================= -->
     <header class="hud-bar hud-bar--top">
 
       <div class="turn-signals">
@@ -639,7 +812,6 @@
 
     </header>
 
-    <!-- ================= TENGAH ================= -->
     <section class="hud-mid">
 
       <div class="cell speed-cell">
@@ -663,7 +835,6 @@
 
     </section>
 
-    <!-- ================= BAR BAWAH ================= -->
     <footer class="hud-bar hud-bar--bottom">
 
       <div class="odo">
@@ -684,7 +855,6 @@
 
     </footer>
 
-    <!-- ================= SUMBER DATA (hidden) ================= -->
     <div class="data-source" hidden>
       <section>
         <dl>
@@ -709,13 +879,17 @@
   </main>
 </div>
 
-<!-- ================= SOUND SEATBELT ================= -->
+
 <audio id="seatbeltSound" src="seatbelt-warning.mp3" loop preload="auto"></audio>
+<audio id="welcomeSound" src="welcome.mp3" preload="auto"></audio>
 
 <script src="script.js"></script>
 <script src="hud.js"></script>
 
-<!-- ================= Helper: generate RPM segments ================= -->
+
+<!-- ============================================================
+     HELPER RPM SEGMENTS
+     ============================================================ -->
 <script>
 (function () {
   const bars = document.getElementById('rpmBars');
@@ -741,6 +915,360 @@
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
+})();
+</script>
+
+
+<!-- ============================================================
+     🤖 BOOT SEQUENCE + 🔊 WELCOME
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ====== CONFIG ====== */
+  const AUTO_BOOT       = true;   // matikan boot otomatis
+  const BOOT_DURATION   = 5000;   // durasi boot (ms)
+  const AUTO_WELCOME    = true;   // putar welcome setelah boot
+
+  const WELCOME_TEXT    = 'Selamat datang Bos Shaquille Carvinson';
+  const USE_MP3         = true;   // true = pakai welcome.mp3, false = TTS
+
+  /* ====== ELEMEN ====== */
+  const overlay    = document.getElementById('bootOverlay');
+  const textEl     = document.getElementById('bootText');
+  const fillEl     = document.getElementById('bootProgressFill');
+  const cpuEl      = document.getElementById('bootCpu');
+  const memEl      = document.getElementById('bootMem');
+  const netEl      = document.getElementById('bootNet');
+  const sceneEl    = document.getElementById('scene');
+  const bannerEl   = document.getElementById('welcomeBanner');
+  const mp3Welcome = document.getElementById('welcomeSound');
+
+  if (!overlay) return;
+
+  /* =========================================================
+     AUDIO ENGINE (Web Audio API)
+     ========================================================= */
+  let audioCtx = null;
+  function getAudio() {
+    if (audioCtx) return audioCtx;
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      audioCtx = new Ctx();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    } catch (e) { return null; }
+  }
+
+  function beep(freq, dur = 0.08, vol = 0.08, type = 'square', delay = 0) {
+    const ctx = getAudio();
+    if (!ctx) return;
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    const t0 = ctx.currentTime + delay;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+
+  function sweep(f1, f2, dur = 0.4, vol = 0.05, type = 'sawtooth', delay = 0) {
+    const ctx = getAudio();
+    if (!ctx) return;
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    const t0 = ctx.currentTime + delay;
+    osc.frequency.setValueAtTime(f1, t0);
+    osc.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+
+  function chord(freqs, dur = 0.6, vol = 0.06) {
+    freqs.forEach((f, i) => beep(f, dur, vol, 'sine', i * 0.02));
+  }
+
+  function drone(dur = 5, vol = 0.025) {
+    const ctx = getAudio();
+    if (!ctx) return;
+    const osc  = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type  = 'sawtooth';
+    osc2.type = 'sine';
+    osc.frequency.value  = 55;
+    osc2.frequency.value = 82.4;
+    const t0 = ctx.currentTime;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(vol, t0 + 0.5);
+    gain.gain.setValueAtTime(vol, t0 + dur - 0.6);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);  osc.stop(t0 + dur + 0.1);
+    osc2.start(t0); osc2.stop(t0 + dur + 0.1);
+  }
+
+  /* =========================================================
+     BOOT AUDIO
+     ========================================================= */
+  function playBootAudio() {
+    beep(220, 0.10, 0.09, 'square', 0.00);
+    beep(440, 0.10, 0.09, 'square', 0.18);
+    beep(660, 0.10, 0.09, 'square', 0.36);
+
+    drone(BOOT_DURATION / 1000, 0.022);
+
+    for (let i = 0; i < 4; i++) {
+      sweep(300, 900, 0.35, 0.035, 'sawtooth', 0.6 + i * 0.9);
+    }
+    for (let i = 0; i < 18; i++) {
+      beep(1200 + (i % 3) * 200, 0.03, 0.025, 'square', 1.0 + i * 0.18);
+    }
+
+    const tEnd = BOOT_DURATION / 1000 - 0.5;
+    chord([523.25, 659.25, 783.99], 0.7, 0.07);
+    beep(1046.50, 0.15, 0.08, 'square', tEnd + 0.35);
+    sweep(200, 1500, 0.4, 0.06, 'square', tEnd + 0.5);
+  }
+
+  /* =========================================================
+     🔊 WELCOME AUDIO
+     ========================================================= */
+  function playWelcomeChime() {
+    // chime pembuka sebelum ucapan: D5 -> A5
+    beep(587.33, 0.30, 0.10, 'sine', 0.00);
+    beep(880.00, 0.50, 0.10, 'sine', 0.18);
+    // tambahan "sparkle"
+    beep(1174.66, 0.20, 0.06, 'sine', 0.40);
+  }
+
+  function speakWelcome() {
+    if (!('speechSynthesis' in window)) return;
+
+    const u = new SpeechSynthesisUtterance(WELCOME_TEXT);
+    u.lang   = 'id-ID';
+    u.rate   = 0.95;
+    u.pitch  = 1.05;
+    u.volume = 1.0;
+
+    const voices = speechSynthesis.getVoices();
+    const idVoice = voices.find(v => /id[-_]ID/i.test(v.lang))
+                 || voices.find(v => /indonesia/i.test(v.name));
+    if (idVoice) u.voice = idVoice;
+
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }
+
+  /* =========================================================
+     PLAY WELCOME — chime + suara + banner
+     ========================================================= */
+  let welcomeDone = false;
+
+  function playWelcome(force) {
+    if (welcomeDone && !force) return;
+    welcomeDone = true;
+
+    // 1. chime dulu
+    playWelcomeChime();
+
+    // 2. tampilkan banner
+    if (bannerEl) {
+      bannerEl.classList.add('show');
+      setTimeout(() => bannerEl.classList.remove('show'), 4500);
+    }
+
+    // 3. suara sambutan setelah chime
+    setTimeout(() => {
+      if (USE_MP3 && mp3Welcome) {
+        mp3Welcome.currentTime = 0;
+        mp3Welcome.volume = 1.0;
+        mp3Welcome.play().catch(() => {
+          // fallback ke TTS kalau MP3 tidak ada / gagal
+          speakWelcome();
+        });
+      } else {
+        speakWelcome();
+      }
+    }, 550);
+  }
+
+  // API publik
+  window.playWelcome = function () { playWelcome(true); };
+
+  /* =========================================================
+     URUTAN TEKS BOOT
+     ========================================================= */
+  const BOOT_STAGES = [
+    { at:   0, text: 'INITIALIZING AI CORE...' },
+    { at:  12, text: 'LOADING MODULES...' },
+    { at:  30, text: 'CALIBRATING SENSORS...' },
+    { at:  50, text: 'ESTABLISHING NEURAL LINK...' },
+    { at:  68, text: 'SYNCING VEHICLE DATA...' },
+    { at:  85, text: 'RUNNING DIAGNOSTICS...' },
+    { at:  96, text: 'SYSTEM READY' }
+  ];
+
+  /* =========================================================
+     BOOT SEQUENCE
+     ========================================================= */
+  let bootTimer   = null;
+  let startTime   = 0;
+  let running     = false;
+
+  function startBoot() {
+    if (running) return;
+    running = true;
+
+    overlay.classList.remove('hide');
+    sceneEl.classList.remove('hud-booted');
+
+    fillEl.style.width = '0%';
+    textEl.textContent = 'INITIALIZING AI CORE...';
+    cpuEl.textContent  = 'CPU: 0%';
+    memEl.textContent  = 'MEM: 0%';
+    netEl.textContent  = 'NET: OK';
+
+    playBootAudio();
+
+    startTime = performance.now();
+
+    cancelAnimationFrame(bootTimer);
+    function tick(now) {
+      const elapsed = now - startTime;
+      const pct = Math.min(100, (elapsed / BOOT_DURATION) * 100);
+
+      fillEl.style.width = pct.toFixed(2) + '%';
+
+      let stage = BOOT_STAGES[0];
+      for (const s of BOOT_STAGES) {
+        if (pct >= s.at) stage = s;
+      }
+      if (textEl.textContent !== stage.text) {
+        textEl.textContent = stage.text;
+        overlay.classList.add('glitch');
+        setTimeout(() => overlay.classList.remove('glitch'), 360);
+      }
+
+      const cpu = Math.min(100, Math.floor(pct + Math.random() * 8));
+      const mem = Math.min(100, Math.floor(pct * 0.85 + Math.random() * 10));
+      cpuEl.textContent = 'CPU: ' + cpu + '%';
+      memEl.textContent = 'MEM: ' + mem + '%';
+
+      if (pct >= 100) {
+        finishBoot();
+        return;
+      }
+      bootTimer = requestAnimationFrame(tick);
+    }
+    bootTimer = requestAnimationFrame(tick);
+  }
+
+  function finishBoot() {
+    fillEl.style.width = '100%';
+    textEl.textContent = 'SYSTEM READY';
+    cpuEl.textContent  = 'CPU: 100%';
+    memEl.textContent  = 'MEM: 100%';
+    netEl.textContent  = 'NET: CONNECTED';
+
+    setTimeout(() => {
+      overlay.classList.add('hide');
+
+      setTimeout(() => {
+        sceneEl.classList.add('hud-booted');
+        running = false;
+
+        // 🔊 WELCOME setelah HUD muncul
+        if (AUTO_WELCOME) {
+          setTimeout(() => playWelcome(), 400);
+        }
+
+      }, 200);
+
+    }, 700);
+  }
+
+  /* =========================================================
+     AUTO START
+     ========================================================= */
+  if (AUTO_BOOT) {
+    if (document.readyState === 'complete') {
+      setTimeout(startBoot, 300);
+    } else {
+      window.addEventListener('load', () => setTimeout(startBoot, 300));
+    }
+  }
+
+  /* =========================================================
+     TRIGGER MANUAL
+     - window.playBootSequence()  → boot ulang dari awal
+     - window.playWelcome()       → welcome doang
+     - SendNUIMessage({ action = 'boot' })
+     - SendNUIMessage({ action = 'welcome' })
+     ========================================================= */
+  window.playBootSequence = function () {
+    running = false;
+    welcomeDone = false;
+    cancelAnimationFrame(bootTimer);
+    startBoot();
+  };
+
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (!d) return;
+
+    if (d.action === 'boot' || d.type === 'boot') {
+      window.playBootSequence();
+    }
+    if (d.action === 'welcome' || d.type === 'welcome') {
+      playWelcome(true);
+    }
+  });
+
+  /* Unlock audio */
+  function unlockOnce() {
+    const ctx = getAudio();
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+
+    if ('speechSynthesis' in window) {
+      // unlock TTS dengan speak kosong
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      speechSynthesis.speak(u);
+    }
+
+    if (mp3Welcome) {
+      // unlock MP3 element
+      mp3Welcome.volume = 0;
+      mp3Welcome.play().then(() => {
+        mp3Welcome.pause();
+        mp3Welcome.currentTime = 0;
+        mp3Welcome.volume = 1.0;
+      }).catch(()=>{});
+    }
+  }
+  window.addEventListener('pointerdown', unlockOnce, { once: true });
+  window.addEventListener('keydown',     unlockOnce, { once: true });
+
+  /* Preload voices */
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = () => {};
+    speechSynthesis.getVoices();
+  }
+
 })();
 </script>
 
