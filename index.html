@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arc Reactor Cluster HUD</title>
+<title>Race Cluster HUD</title>
 <style>
   *,
   *::before,
@@ -52,17 +52,17 @@
   }
   .scene.hud-booted { opacity: 1; transform: scale(1) translateY(0); }
 
-  /* ================= HUD (tanpa panel, hologram) ================= */
+  /* ================= HUD ================= */
   .hud {
     --c1: #19e6ff;
-    --c2: #8a7bff;
+    --c2: #4aa8ff;
     --accent: #19e6ff;
     --accent-rgb: 25, 230, 255;
 
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
     position: relative;
     background: transparent !important;
   }
@@ -73,15 +73,19 @@
     --accent-rgb: 255, 59, 92;
   }
 
-  /* ================= TOP ROW ================= */
+  /* ================= TOP: SHIFT LIGHTS + SEIN ================= */
   .hud-bar--top {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 4px;
+    gap: 8px; padding: 0 2px;
   }
-
   .turn-signals { display: contents; }
+  #indLeft  { order: 1; }
+  .shift-lights { order: 2; }
+  #indRight { order: 3; }
+
   .arrow {
-    width: 34px; height: 26px;
+    flex: none;
+    width: 30px; height: 22px;
     background: rgba(70, 110, 160, .35) !important;
     clip-path: polygon(0 50%, 45% 0, 45% 28%, 100% 28%, 100% 72%, 45% 72%, 45% 100%);
     transition: .15s;
@@ -91,17 +95,32 @@
     background: var(--green) !important;
     filter: drop-shadow(0 0 7px rgba(37, 208, 125, 1)) drop-shadow(0 0 14px rgba(37, 208, 125, .8));
   }
-  /* DOM order: left, seatbelt, chips, right -> pakai order agar sein di ujung */
-  #indLeft  { order: 1; }
-  .chips    { order: 2; }
-  #indRight { order: 3; }
-  .seatbelt-warning { order: 4; }
 
+  /* lampu shift ala F1 */
+  .shift-lights {
+    flex: 1;
+    display: flex; justify-content: center; gap: 4px;
+    transform: skewX(-14deg);
+  }
+  .sl {
+    flex: 1; max-width: 17px; height: 11px;
+    background: rgba(40, 60, 90, .55);
+    border: 1px solid rgba(160, 200, 255, .25);
+    border-radius: 2px;
+    transition: background .06s, box-shadow .06s;
+  }
+  .sl.g.on { background: #25d07d; box-shadow: 0 0 9px #25d07d; border-color: #b8ffd8; }
+  .sl.r.on { background: #ff3b5c; box-shadow: 0 0 9px #ff3b5c; border-color: #ffc0cb; }
+  .sl.b.on { background: #3d8bff; box-shadow: 0 0 10px #3d8bff; border-color: #cfe0ff; }
+  .hud.flash .sl { background: #3d8bff; box-shadow: 0 0 12px #3d8bff; }
+
+  /* chip */
+  .hud-bar--chips { display: flex; justify-content: center; }
   .chips { display: flex; gap: 6px; }
   .chip {
     display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 9px;
-    background: rgba(8, 26, 60, .55) !important;
+    padding: 2px 9px;
+    background: rgba(8, 20, 44, .6) !important;
     border: 1px solid rgba(var(--accent-rgb), .25);
     clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
     color: var(--dim);
@@ -122,8 +141,7 @@
   .gauge {
     position: relative;
     width: 100%;
-    aspect-ratio: 1 / 1;
-    font-size: calc(var(--hud-width) * .01);   /* 1em = 1% lebar HUD */
+    aspect-ratio: 400 / 250;
   }
   .gauge > svg {
     position: absolute; inset: 0;
@@ -131,72 +149,91 @@
     display: block; overflow: visible;
   }
 
-  .g-disc-ring { fill: none; stroke: rgba(var(--accent-rgb), .35); stroke-width: 1; }
-  .g-track     { fill: none; stroke: rgba(80, 130, 200, .2); stroke-width: 10; stroke-linecap: round; }
+  .g-base   { fill: none; stroke: rgba(var(--accent-rgb), .35); stroke-width: 1.2; }
+  .g-track  { fill: none; stroke: rgba(80, 130, 200, .22); stroke-width: 6; }
   .g-fill {
-    fill: none; stroke: url(#spdGrad); stroke-width: 10; stroke-linecap: round;
-    filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), .95)) drop-shadow(0 0 14px rgba(var(--accent-rgb), .5));
+    fill: none; stroke: url(#spdGrad); stroke-width: 6;
+    filter: drop-shadow(0 0 5px rgba(var(--accent-rgb), .95)) drop-shadow(0 0 12px rgba(var(--accent-rgb), .5));
   }
+  .g-dot { fill: #fff; filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 1)); }
   .g-tick     { stroke: rgba(150, 190, 235, .45); stroke-width: 1.2; }
   .g-tick.maj { stroke: rgba(220, 240, 255, .95); stroke-width: 2; }
   .g-label {
-    fill: #9cbbdc; font-size: 10px; font-weight: 700;
+    fill: #9cbbdc; font-size: 9px; font-weight: 700; font-style: italic;
     text-anchor: middle; dominant-baseline: middle;
   }
-  .g-outer-a { fill: none; stroke: rgba(var(--accent-rgb), .55); stroke-width: 1.4; stroke-dasharray: 2 9; }
-  .g-outer-b { fill: none; stroke: rgba(var(--accent-rgb), .8);  stroke-width: 2.5; stroke-dasharray: 40 220; stroke-linecap: round; }
-  .g-inner-a { fill: none; stroke: rgba(var(--accent-rgb), .4);  stroke-width: 1.2; stroke-dasharray: 26 8 4 8; }
-  .g-inner-b { fill: none; stroke: rgba(var(--accent-rgb), .25); stroke-width: 6; stroke-dasharray: 1.5 7; }
+  .r-label {
+    fill: #b8d4ee; font-size: 11px; font-weight: 800; font-style: italic;
+    text-anchor: middle; dominant-baseline: middle;
+  }
+  .r-label.red { fill: #ff6b84; }
 
-  .rpm-glow { filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), .75)); }
-  .rseg { stroke: rgba(70, 110, 170, .3); stroke-width: 8; transition: stroke .08s; }
+  .rpm-glow { filter: drop-shadow(0 0 4px rgba(var(--accent-rgb), .7)); }
+  .rseg { stroke: rgba(70, 110, 170, .3); stroke-width: 7; transition: stroke .07s; }
   .rseg.on.c { stroke: var(--c1); }
   .rseg.on.a { stroke: #ffc247; }
   .rseg.on.r { stroke: #ff3b5c; }
-  .rpm-lbl { fill: #6f9cc0; font-size: 8px; font-weight: 800; letter-spacing: 2px; text-anchor: middle; }
-
-  .needle {
-    stroke: #fff; stroke-width: 3; stroke-linecap: round;
-    filter: drop-shadow(0 0 5px rgba(var(--accent-rgb), 1)) drop-shadow(0 0 10px rgba(var(--accent-rgb), .8));
-  }
-
-  /* radar sweep di tengah */
-  .sweep {
-    position: absolute;
-    left: 25%; top: 25%; width: 50%; height: 50%;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent 0deg 290deg, rgba(var(--accent-rgb), .22) 360deg);
-    animation: spin 3.2s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .rpm-lbl { fill: #6f9cc0; font-size: 7px; font-weight: 800; letter-spacing: 2px; text-anchor: middle; }
 
   .gauge-center {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    text-align: center;
-    padding-bottom: 4%;
+    position: absolute;
+    left: 17%; right: 17%; top: 40%;
+    display: flex; align-items: center; justify-content: center;
+    gap: calc(var(--hud-width) * .03);
   }
+  .speed-col { display: flex; flex-direction: column; align-items: center; }
   .speed-num {
-    font-size: 21em; font-weight: 800;      /* ~ 21% lebar HUD */
-    font-size: calc(var(--hud-width) * .215);
+    font-size: calc(var(--hud-width) * .2);
+    font-weight: 900; font-style: italic;
     line-height: .95; letter-spacing: -.05em;
-    background: linear-gradient(180deg, #ffffff 0%, #b4efff 45%, var(--accent) 100%);
+    min-width: 2.1ch; text-align: center;
+    background: linear-gradient(180deg, #ffffff 0%, #c4f2ff 45%, var(--accent) 100%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
-    filter: drop-shadow(0 0 14px rgba(var(--accent-rgb), .95)) drop-shadow(0 0 2px rgba(0, 0, 0, .95));
+    filter: drop-shadow(0 0 12px rgba(var(--accent-rgb), .95)) drop-shadow(0 0 2px rgba(0, 0, 0, .95));
     font-variant-numeric: tabular-nums;
+    padding-right: .08em;
   }
   .speed-unit {
-    margin-top: 2px;
-    font-size: calc(var(--hud-width) * .03);
-    letter-spacing: .35em;
+    margin-top: 1px;
+    font-size: calc(var(--hud-width) * .028);
+    letter-spacing: .35em; padding-left: .35em;
     color: #c0d8f0; font-weight: 800;
     text-shadow: 0 0 6px rgba(0, 0, 0, .95);
   }
+
+  /* gear miring */
+  .gear-box {
+    position: relative;
+    width: calc(var(--hud-width) * .15);
+    height: calc(var(--hud-width) * .19);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(180deg, var(--c1), var(--c2)) !important;
+    clip-path: polygon(22% 0, 100% 0, 78% 100%, 0 100%);
+    filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), .9));
+  }
+  .gear-box::before {
+    content: ""; position: absolute; inset: 2px;
+    background: radial-gradient(circle at 50% 35%, rgba(var(--accent-rgb), .3), #061630 78%);
+    clip-path: polygon(22% 0, 100% 0, 78% 100%, 0 100%);
+  }
+  .gear-box > * { position: relative; z-index: 1; }
+  .gear-box .lbl {
+    font-size: calc(var(--hud-width) * .02); letter-spacing: .25em;
+    color: #9cbbdc; font-weight: 800; margin-top: 1px; padding-left: .25em;
+  }
+  .gear-box .val {
+    font-size: calc(var(--hud-width) * .098);
+    font-weight: 900; font-style: italic; color: #fff; line-height: 1;
+    display: inline-block; min-width: 1ch; text-align: center;
+    text-shadow: 0 0 14px rgba(var(--accent-rgb), 1), 0 0 3px rgba(0, 0, 0, .95);
+  }
+
   .rpm-value {
-    margin-top: calc(var(--hud-width) * .018);
+    position: absolute; left: 50%; bottom: 1%;
+    transform: translateX(-50%);
+    white-space: nowrap;
     font-size: calc(var(--hud-width) * .05);
-    font-weight: 800; color: #fff; line-height: 1;
+    font-weight: 800; font-style: italic; color: #fff; line-height: 1;
     font-variant-numeric: tabular-nums;
     text-shadow: 0 0 10px rgba(var(--accent-rgb), .95), 0 0 2px rgba(0, 0, 0, .95);
   }
@@ -204,85 +241,54 @@
     font-size: calc(var(--hud-width) * .022);
     color: #9cbbdc; letter-spacing: .25em; font-weight: 700; margin-left: 5px;
   }
-  .speed-sub { display: none; }
 
   .seatbelt-warning {
     display: none;
-    position: absolute; left: 50%; top: 24%;
+    position: absolute; left: 50%; top: 27%;
     transform: translateX(-50%);
     align-items: center; gap: 4px;
     padding: 3px 11px;
-    background: rgba(255, 59, 92, .3) !important;
+    background: rgba(255, 59, 92, .35) !important;
     border: 1px solid rgba(255, 59, 92, .95);
     clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
     color: #ffe6ea;
     font-size: 9px; font-weight: 800; letter-spacing: 1.3px;
     text-shadow: 0 0 6px rgba(255, 59, 92, 1);
-    animation: blink 1s steps(2, start) infinite;
     z-index: 3;
   }
   .seatbelt-warning.show { display: flex; }
-  @keyframes blink { 50% { opacity: .3; } }
-
-  /* gear hex */
-  .gear-box {
-    position: absolute;
-    left: 50%; top: 77%;
-    width: calc(var(--hud-width) * .2);
-    height: calc(var(--hud-width) * .226);
-    transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: linear-gradient(180deg, var(--c1), var(--c2)) !important;
-    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), .9));
-  }
-  .gear-box::before {
-    content: ""; position: absolute; inset: 2px;
-    background: radial-gradient(circle at 50% 35%, rgba(var(--accent-rgb), .3), #061630 75%);
-    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  }
-  .gear-box > * { position: relative; z-index: 1; }
-  .gear-box .lbl {
-    font-size: calc(var(--hud-width) * .02); letter-spacing: .25em;
-    color: #9cbbdc; font-weight: 800; margin-top: 2px;
-  }
-  .gear-box .val {
-    font-size: calc(var(--hud-width) * .105);
-    font-weight: 800; color: #fff; line-height: 1;
-    display: inline-block; min-width: 1ch; text-align: center;
-    text-shadow: 0 0 14px rgba(var(--accent-rgb), 1), 0 0 3px rgba(0, 0, 0, .95);
-  }
-  .gear-box .val.pop { animation: gearPop .3s ease-out; }
-  @keyframes gearPop {
-    0% { transform: scale(.6); } 60% { transform: scale(1.22); } 100% { transform: scale(1); }
-  }
 
   /* ================= BOTTOM STRIP ================= */
   .hud-bar--bottom {
     display: grid;
-    grid-template-columns: auto 1fr 1fr;
-    gap: 8px; align-items: center;
-    padding: 0 4px;
+    grid-template-columns: auto 1fr 1fr auto;
+    gap: 6px; align-items: stretch;
+    padding: 0 2px;
   }
-  .odo {
+  .odo, .top-box {
     display: flex; align-items: baseline; gap: 4px;
-    padding: 5px 10px;
-    background: rgba(6, 22, 52, .6) !important;
+    padding: 5px 9px;
+    background: rgba(6, 18, 42, .62) !important;
     border: 1px solid rgba(var(--accent-rgb), .25);
-    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
     font-variant-numeric: tabular-nums;
   }
-  .odo small { font-size: 7px; letter-spacing: 1.6px; color: #a8c4e0; font-weight: 800; }
+  .odo { clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%); }
+  .top-box { clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%); flex-direction: column; align-items: center; gap: 1px; padding: 4px 10px 4px 14px; }
+  .odo small, .top-box small { font-size: 7px; letter-spacing: 1.6px; color: #a8c4e0; font-weight: 800; }
   .odo span {
-    font-size: 13px; font-weight: 800; letter-spacing: .6px; color: #fff;
+    font-size: 12px; font-weight: 800; letter-spacing: .6px; color: #fff;
     text-shadow: 0 0 7px rgba(var(--accent-rgb), .9), 0 0 2px rgba(0, 0, 0, .95);
   }
   .odo #vOdoUnit { color: #a8c4e0; font-weight: 700; }
+  .top-box b {
+    font-size: 13px; font-style: italic; color: var(--amber);
+    text-shadow: 0 0 7px rgba(255, 194, 71, .9);
+  }
 
   .meter {
     display: flex; flex-direction: column; gap: 3px;
-    padding: 4px 9px;
-    background: rgba(6, 22, 52, .6) !important;
+    padding: 4px 8px;
+    background: rgba(6, 18, 42, .62) !important;
     border: 1px solid rgba(var(--accent-rgb), .2);
   }
   .meter-head {
@@ -294,7 +300,7 @@
     font-variant-numeric: tabular-nums;
     text-shadow: 0 0 6px rgba(var(--accent-rgb), .8);
   }
-  .track { height: 5px; background: rgba(8, 26, 60, .8) !important; overflow: hidden; }
+  .track { height: 5px; background: rgba(8, 26, 60, .8) !important; overflow: hidden; transform: skewX(-20deg); }
   .fill {
     height: 100%; width: 0%;
     background: linear-gradient(90deg, var(--cyan), var(--blue));
@@ -309,20 +315,63 @@
   }
   .meter.low .meter-head b { color: var(--red); text-shadow: 0 0 6px rgba(255, 59, 92, 1); }
 
+  /* ================= MUSIC PLAYER ================= */
+  .music {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 2px;
+    padding: 4px 12px;
+    background: rgba(6, 18, 42, .62) !important;
+    border: 1px solid rgba(var(--accent-rgb), .2);
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+  .music[hidden] { display: none !important; }
+  .m-ico {
+    width: 10px; text-align: center; font-size: 9px;
+    color: var(--accent); text-shadow: 0 0 6px rgba(var(--accent-rgb), .9);
+  }
+  .m-info { display: flex; flex-direction: column; min-width: 0; flex: 0 1 38%; line-height: 1.15; }
+  .m-info b {
+    font-size: 10px; font-weight: 800; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-shadow: 0 0 6px rgba(var(--accent-rgb), .7);
+  }
+  .m-info small {
+    font-size: 7.5px; letter-spacing: 1.2px; color: #a8c4e0; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .m-prog { flex: 1; height: 4px; background: rgba(8, 26, 60, .8); overflow: hidden; transform: skewX(-20deg); }
+  .m-prog > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--c1), var(--c2)); }
+  .m-meta {
+    display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15;
+    font-variant-numeric: tabular-nums; min-width: 40px;
+  }
+  .m-meta span { font-size: 9px; font-weight: 800; color: #c0d8f0; }
+  .m-meta small { font-size: 7px; letter-spacing: 1.2px; color: #6f9cc0; font-weight: 800; }
+
+  /* garis finish */
+  .checker {
+    height: 6px; margin: 1px 2px 0;
+    background: repeating-conic-gradient(rgba(255,255,255,.9) 0% 25%, rgba(10,16,30,.9) 0% 50%) 0 0 / 12px 12px;
+    opacity: .55;
+    transform: skewX(-20deg);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
+  }
+
   .data-source[hidden] { display: none !important; }
 
-  /* ================= BOOT OVERLAY ================= */
+  /* ================= BOOT OVERLAY (START LIGHTS) ================= */
   .boot-overlay {
     position: fixed;
     right: var(--hud-right);
     bottom: var(--hud-bottom);
     width: var(--hud-width);
-    background: rgba(5, 18, 42, .93) !important;
+    background: rgba(5, 12, 28, .93) !important;
     border: 1px solid rgba(25, 230, 255, .7);
-    border-radius: 18px;
+    border-radius: 14px;
     padding: 18px 16px;
     z-index: 99999;
-    display: flex; flex-direction: column; align-items: center; gap: 11px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
     opacity: 1; transform: scale(1);
     transition: opacity .5s ease, transform .5s ease;
     overflow: hidden;
@@ -332,33 +381,24 @@
   .boot-overlay.hide { opacity: 0; transform: scale(.9) translateY(8px); pointer-events: none; }
   .boot-overlay::before {
     content: ""; position: absolute; inset: 0;
-    background-image:
-      linear-gradient(rgba(25, 230, 255, .08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(25, 230, 255, .08) 1px, transparent 1px);
-    background-size: 16px 16px; pointer-events: none; opacity: .7;
+    background: repeating-conic-gradient(rgba(255,255,255,.05) 0% 25%, transparent 0% 50%) 0 0 / 14px 14px;
+    pointer-events: none;
   }
-  .boot-scanline {
-    position: absolute; left: 0; right: 0; height: 44px;
-    background: linear-gradient(180deg, transparent, rgba(25, 230, 255, .35) 50%, transparent);
-    animation: scanMove 1.6s linear infinite; pointer-events: none;
+
+  .start-lights { display: flex; gap: 12px; z-index: 2; padding: 8px 14px; background: #02060f; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); }
+  .start-light {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #2a0a10; border: 2px solid #12060a;
+    transition: background .1s, box-shadow .1s;
   }
-  @keyframes scanMove { 0% { top: -44px; } 100% { top: 100%; } }
-  .boot-core { width: 96px; height: 96px; position: relative; display: grid; place-items: center; }
-  .boot-core svg { width: 100%; height: 100%; display: block; overflow: visible; }
-  .boot-ring-outer { fill: none; stroke: rgba(25, 230, 255, .8); stroke-width: 2; stroke-dasharray: 10 6; transform-origin: 50% 50%; animation: spinCW 4s linear infinite; }
-  .boot-ring-mid   { fill: none; stroke: rgba(25, 230, 255, .5); stroke-width: 1.5; stroke-dasharray: 4 4; transform-origin: 50% 50%; animation: spinCCW 2.4s linear infinite; }
-  .boot-hex { fill: none; stroke: rgba(25, 230, 255, 1); stroke-width: 2; filter: drop-shadow(0 0 6px rgba(25, 230, 255, .9)); }
-  .boot-core-dot { fill: rgba(25, 230, 255, 1); filter: drop-shadow(0 0 10px rgba(25, 230, 255, 1)); animation: corePulse 1.2s ease-in-out infinite; }
-  @keyframes spinCW  { to { transform: rotate(360deg); } }
-  @keyframes spinCCW { to { transform: rotate(-360deg); } }
-  @keyframes corePulse { 0%, 100% { opacity: 1; r: 6; } 50% { opacity: .4; r: 9; } }
+  .start-light.on { background: #ff2a45; box-shadow: 0 0 14px #ff2a45, 0 0 28px rgba(255,42,69,.7); }
+  .boot-overlay.go .start-light { background: #25d07d; box-shadow: 0 0 14px #25d07d, 0 0 28px rgba(37,208,125,.7); border-color: #0a2a1a; }
+
   .boot-text {
     font-size: 10px; font-weight: 800; letter-spacing: 2px; color: #9ae6ff;
     text-shadow: 0 0 8px rgba(25, 230, 255, 1), 0 0 2px rgba(0, 0, 0, .9);
     text-align: center; min-height: 14px; z-index: 2;
-    animation: textFlicker .15s steps(2, start) infinite;
   }
-  @keyframes textFlicker { 0%, 100% { opacity: 1; } 50% { opacity: .85; } }
   .boot-progress {
     width: 100%; height: 5px; background: rgba(10, 35, 75, .8);
     border: 1px solid rgba(25, 230, 255, .35); border-radius: 3px;
@@ -366,20 +406,11 @@
   }
   .boot-progress-fill {
     height: 100%; width: 0%;
-    background: linear-gradient(90deg, #19e6ff, #4aa8ff, #19e6ff);
-    background-size: 200% 100%;
-    box-shadow: 0 0 10px rgba(25, 230, 255, 1), inset 0 0 4px rgba(255, 255, 255, .5);
-    animation: progressShine 1.5s linear infinite;
+    background: linear-gradient(90deg, #19e6ff, #4aa8ff);
+    box-shadow: 0 0 10px rgba(25, 230, 255, 1);
     transition: width .12s linear;
   }
-  @keyframes progressShine { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
   .boot-stats { width: 100%; display: flex; justify-content: space-between; font-size: 7px; font-weight: 800; letter-spacing: 1.2px; color: #6f9cc0; z-index: 2; }
-  .boot-overlay.glitch { animation: glitchShake .12s linear 3; }
-  @keyframes glitchShake {
-    0% { transform: translate(0, 0); } 25% { transform: translate(-2px, 1px); }
-    50% { transform: translate(2px, -1px); } 75% { transform: translate(-1px, 2px); }
-    100% { transform: translate(0, 0); }
-  }
 
   /* ================= WELCOME BANNER ================= */
   .welcome-banner {
@@ -387,7 +418,7 @@
     right: var(--hud-right);
     bottom: calc(var(--hud-bottom) + 10px);
     width: var(--hud-width);
-    background: rgba(5, 18, 42, .88);
+    background: rgba(5, 12, 28, .88);
     border: 1px solid rgba(25, 230, 255, .7);
     border-radius: 14px;
     padding: 13px 16px;
@@ -408,7 +439,7 @@
   }
   .welcome-line-1 { font-size: 9px; letter-spacing: 2px; color: #6f9cc0; font-weight: 800; z-index: 1; }
   .welcome-line-2 {
-    font-size: 18px; letter-spacing: .5px; font-weight: 800;
+    font-size: 18px; letter-spacing: .5px; font-weight: 900; font-style: italic;
     background: linear-gradient(90deg, #ffffff, #7fdcff, #19e6ff);
     -webkit-background-clip: text; background-clip: text; color: transparent;
     filter: drop-shadow(0 0 8px rgba(25, 230, 255, .9)) drop-shadow(0 0 2px rgba(0, 0, 0, .95));
@@ -418,9 +449,7 @@
   .welcome-banner::after {
     content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
     background: linear-gradient(90deg, transparent, #19e6ff, transparent);
-    animation: welcomePulse 1.5s ease-in-out infinite;
   }
-  @keyframes welcomePulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
 
   /* ================= RESPONSIVE ================= */
   @media (max-width: 900px) { :root { --hud-width: 320px; --hud-right: 14px; --hud-bottom: 100px; } }
@@ -437,18 +466,14 @@
 
 <!-- ================= BOOT OVERLAY ================= -->
 <div class="boot-overlay" id="bootOverlay">
-  <div class="boot-scanline"></div>
-  <div class="boot-core">
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <circle class="boot-ring-outer" cx="50" cy="50" r="42"/>
-      <circle class="boot-ring-mid" cx="50" cy="50" r="33"/>
-      <polygon class="boot-hex" points="50,20 76,35 76,65 50,80 24,65 24,35"/>
-      <line x1="50" y1="30" x2="50" y2="70" stroke="rgba(25,230,255,.6)" stroke-width="1"/>
-      <line x1="30" y1="50" x2="70" y2="50" stroke="rgba(25,230,255,.6)" stroke-width="1"/>
-      <circle class="boot-core-dot" cx="50" cy="50" r="6"/>
-    </svg>
+  <div class="start-lights" aria-hidden="true">
+    <span class="start-light"></span>
+    <span class="start-light"></span>
+    <span class="start-light"></span>
+    <span class="start-light"></span>
+    <span class="start-light"></span>
   </div>
-  <div class="boot-text" id="bootText">INITIALIZING AI CORE...</div>
+  <div class="boot-text" id="bootText">INITIALIZING RACE CORE...</div>
   <div class="boot-progress"><div class="boot-progress-fill" id="bootProgressFill"></div></div>
   <div class="boot-stats">
     <span id="bootCpu">CPU: --%</span>
@@ -473,62 +498,50 @@
         <span class="arrow left"  id="indLeft"></span>
         <span class="arrow right" id="indRight"></span>
       </div>
+      <div class="shift-lights" id="shiftLights"></div>
+    </header>
 
+    <div class="hud-bar--chips">
       <div class="chips">
         <span class="chip" id="chipEngine"><i></i><span>ENG</span></span>
         <span class="chip" id="chipLights"><i></i><span>LIGHT</span></span>
         <span class="chip" id="chipBelt"><i></i><span>BELT</span></span>
       </div>
-    </header>
+    </div>
 
     <section class="gauge" id="gauge">
-      <svg viewBox="0 0 400 400" aria-hidden="true">
+      <svg viewBox="0 0 400 250" aria-hidden="true">
         <defs>
-          <linearGradient id="spdGrad" x1="0" y1="1" x2="1" y2="0">
+          <linearGradient id="spdGrad" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" style="stop-color:var(--c1)"/>
             <stop offset="1" style="stop-color:var(--c2)"/>
           </linearGradient>
-          <radialGradient id="discGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0"   stop-color="#0b2a5c" stop-opacity=".85"/>
-            <stop offset=".75" stop-color="#061a3c" stop-opacity=".8"/>
-            <stop offset="1"   stop-color="#041229" stop-opacity=".55"/>
-          </radialGradient>
-          <radialGradient id="backGrad" cx="50%" cy="50%" r="50%">
-            <stop offset=".6" stop-color="#030c1e" stop-opacity=".55"/>
+          <radialGradient id="backGrad" cx="50%" cy="86%" r="62%">
+            <stop offset="0"  stop-color="#030c1e" stop-opacity=".78"/>
+            <stop offset=".7" stop-color="#030c1e" stop-opacity=".5"/>
             <stop offset="1"  stop-color="#030c1e" stop-opacity="0"/>
           </radialGradient>
         </defs>
 
-        <!-- backdrop halus agar teks terbaca di atas game -->
-        <circle cx="200" cy="200" r="205" fill="url(#backGrad)"/>
+        <!-- backdrop halus agar terbaca di atas game -->
+        <ellipse cx="200" cy="170" rx="214" ry="130" fill="url(#backGrad)"/>
 
-        <!-- ring dekoratif berputar -->
-        <g id="gOuter">
-          <circle class="g-outer-a" cx="200" cy="200" r="196"/>
-          <circle class="g-outer-b" cx="200" cy="200" r="196"/>
-        </g>
-
-        <g id="gTicks"></g>
-
-        <!-- speed arc -->
-        <circle class="g-track" id="gTrack" cx="200" cy="200" r="160" transform="rotate(135 200 200)"/>
-        <circle class="g-fill"  id="gFill"  cx="200" cy="200" r="160" transform="rotate(135 200 200)"/>
-        <line class="needle" id="gNeedle" x1="336" y1="200" x2="372" y2="200" transform="rotate(135 200 200)"/>
+        <!-- garis dasar -->
+        <line class="g-base" x1="22" y1="215" x2="378" y2="215"/>
 
         <!-- RPM segments -->
         <g class="rpm-glow" id="rpmSegs"></g>
+        <g id="rpmLabels"></g>
 
-        <!-- disc tengah -->
-        <circle cx="200" cy="200" r="108" fill="url(#discGrad)"/>
-        <circle class="g-disc-ring" cx="200" cy="200" r="108"/>
-        <g id="gInner">
-          <circle class="g-inner-a" cx="200" cy="200" r="100"/>
-          <circle class="g-inner-b" cx="200" cy="200" r="92"/>
-        </g>
-        <text class="rpm-lbl" x="200" y="86">R P M</text>
+        <!-- speed arc -->
+        <path class="g-track" d="M 72 215 A 128 128 0 0 1 328 215" pathLength="100"/>
+        <path class="g-fill" id="gFill" d="M 72 215 A 128 128 0 0 1 328 215" pathLength="100" stroke-dasharray="0 100"/>
+        <circle class="g-dot" id="gDot" cx="72" cy="215" r="4.5"/>
+
+        <g id="gTicks"></g>
+
+        <text class="rpm-lbl" x="200" y="239" opacity="0">RPM</text>
       </svg>
-
-      <div class="sweep"></div>
 
       <div class="seatbelt-warning" id="seatbeltWarning">
         <span class="icon">&#9888;</span>
@@ -536,16 +549,17 @@
       </div>
 
       <div class="gauge-center">
-        <div class="speed-num" id="vSpeed">0</div>
-        <div class="speed-unit" id="vUnit">mph</div>
-        <div class="rpm-value"><span id="vRpm">0</span><small>RPM</small></div>
-        <div class="speed-sub">ENGINE <b id="vRpmMid">0</b> RPM</div>
+        <div class="speed-col">
+          <div class="speed-num" id="vSpeed">0</div>
+          <div class="speed-unit" id="vUnit">mph</div>
+        </div>
+        <div class="gear-box">
+          <span class="val" id="vGear">N</span>
+          <span class="lbl">GEAR</span>
+        </div>
       </div>
 
-      <div class="gear-box">
-        <span class="val" id="vGear">N</span>
-        <span class="lbl">GEAR</span>
-      </div>
+      <div class="rpm-value"><span id="vRpm">0</span><small>RPM</small></div>
     </section>
 
     <footer class="hud-bar--bottom">
@@ -564,7 +578,27 @@
         <div class="meter-head"><span>HEALTH</span><b id="vHealth">--</b></div>
         <div class="track"><div class="fill" id="fHealth"></div></div>
       </div>
+
+      <div class="top-box">
+        <small>TOP</small>
+        <b id="vTop">0</b>
+      </div>
     </footer>
+
+    <div class="music" id="musicBar" hidden>
+      <span class="m-ico" id="mState">&#9654;</span>
+      <div class="m-info">
+        <b id="mTitle">-</b>
+        <small id="mArtist">-</small>
+      </div>
+      <div class="m-prog"><div id="mFill"></div></div>
+      <div class="m-meta">
+        <span id="mTime">0:00</span>
+        <small id="mVol">VOL 40</small>
+      </div>
+    </div>
+
+    <div class="checker"></div>
 
     <div class="data-source" hidden>
       <section>
@@ -597,42 +631,62 @@
 <script src="hud.js"></script>
 
 
-<!-- ================= ARC REACTOR GAUGE ================= -->
+<!-- ================= RACE GAUGE ================= -->
 <script>
 (function () {
   const NS = 'http://www.w3.org/2000/svg';
   const RPM_MAX  = 8000;
-  const RPM_SEGS = 36;
+  const RPM_SEGS = 40;
+  const CX = 200, CY = 215;
+  const SPD_R = 128;
 
-  const R   = 160;
-  const C   = 2 * Math.PI * R;
-  const ARC = C * 0.75;                       // 270 derajat
+  const fill    = document.getElementById('gFill');
+  const dot     = document.getElementById('gDot');
+  const ticks   = document.getElementById('gTicks');
+  const rpmG    = document.getElementById('rpmSegs');
+  const rpmLbl  = document.getElementById('rpmLabels');
+  const shiftEl = document.getElementById('shiftLights');
 
-  const track  = document.getElementById('gTrack');
-  const fill   = document.getElementById('gFill');
-  const needle = document.getElementById('gNeedle');
-  const ticks  = document.getElementById('gTicks');
-  const rpmG   = document.getElementById('rpmSegs');
-  const outerG = document.getElementById('gOuter');
-  const innerG = document.getElementById('gInner');
+  function el(name, attrs, parent) {
+    const n = document.createElementNS(NS, name);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function pt(deg, r) {
+    const a = deg * Math.PI / 180;
+    return [CX + Math.cos(a) * r, CY + Math.sin(a) * r];
+  }
 
-  track.style.strokeDasharray = ARC + ' ' + C;
-  fill.style.strokeDasharray  = '0 ' + C;
-
-  /* ---------- RPM segments ---------- */
+  /* ---------- RPM segments (setengah lingkaran, kiri -> kanan) ---------- */
   const segs = [];
   for (let i = 0; i < RPM_SEGS; i++) {
-    const ang = (135 + ((i + 0.5) / RPM_SEGS) * 270) * Math.PI / 180;
-    const ln = document.createElementNS(NS, 'line');
-    ln.setAttribute('x1', 200 + Math.cos(ang) * 120);
-    ln.setAttribute('y1', 200 + Math.sin(ang) * 120);
-    ln.setAttribute('x2', 200 + Math.cos(ang) * 138);
-    ln.setAttribute('y2', 200 + Math.sin(ang) * 138);
+    const deg = 180 + ((i + 0.5) / RPM_SEGS) * 180;
+    const p1 = pt(deg, 146), p2 = pt(deg, 172);
     const f = i / RPM_SEGS;
-    ln.setAttribute('class', 'rseg ' + (f < 0.62 ? 'c' : f < 0.82 ? 'a' : 'r'));
-    ln.style.strokeWidth = 6.5;
-    rpmG.appendChild(ln);
+    const ln = el('line', {
+      x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1],
+      'class': 'rseg ' + (f < 0.62 ? 'c' : f < 0.82 ? 'a' : 'r')
+    }, rpmG);
+    ln.style.strokeWidth = 5.2;
     segs.push(ln);
+  }
+
+  /* angka RPM x1000 */
+  for (let k = 0; k <= 8; k++) {
+    const p = pt(180 + (k / 8) * 180, 186);
+    const t = el('text', { x: p[0], y: p[1], 'class': 'r-label' + (k >= 7 ? ' red' : '') }, rpmLbl);
+    t.textContent = k;
+  }
+
+  /* ---------- LED shift light ---------- */
+  const LED_N = 15;
+  const leds = [];
+  for (let i = 0; i < LED_N; i++) {
+    const d = document.createElement('span');
+    d.className = 'sl ' + (i < 5 ? 'g' : i < 10 ? 'r' : 'b');
+    shiftEl.appendChild(d);
+    leds.push(d);
   }
 
   /* ---------- speed ticks ---------- */
@@ -641,25 +695,18 @@
     curMax = max;
     ticks.innerHTML = '';
     const step = max / 8;
-    for (let i = 0; i <= 40; i++) {
-      const ang = (135 + (i / 40) * 270) * Math.PI / 180;
-      const major = i % 5 === 0;
-      const r1 = major ? 168 : 171, r2 = 177;
-      const ln = document.createElementNS(NS, 'line');
-      ln.setAttribute('x1', 200 + Math.cos(ang) * r1);
-      ln.setAttribute('y1', 200 + Math.sin(ang) * r1);
-      ln.setAttribute('x2', 200 + Math.cos(ang) * r2);
-      ln.setAttribute('y2', 200 + Math.sin(ang) * r2);
-      ln.setAttribute('class', 'g-tick' + (major ? ' maj' : ''));
-      ticks.appendChild(ln);
-
-      if (major) {
-        const t = document.createElementNS(NS, 'text');
-        t.setAttribute('x', 200 + Math.cos(ang) * 188);
-        t.setAttribute('y', 200 + Math.sin(ang) * 188);
-        t.setAttribute('class', 'g-label');
-        t.textContent = Math.round(step * (i / 5));
-        ticks.appendChild(t);
+    for (let i = 0; i <= 32; i++) {
+      const deg = 180 + (i / 32) * 180;
+      const major = i % 4 === 0;
+      const p1 = pt(deg, major ? 112 : 117), p2 = pt(deg, 122);
+      el('line', {
+        x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1],
+        'class': 'g-tick' + (major ? ' maj' : '')
+      }, ticks);
+      if (major && i > 0 && i < 32) {
+        const pl = pt(deg, 100);
+        const t = el('text', { x: pl[0], y: pl[1], 'class': 'g-label' }, ticks);
+        t.textContent = Math.round(step * (i / 4));
       }
     }
   }
@@ -669,10 +716,10 @@
   const speedEl = document.getElementById('vSpeed');
   const unitEl  = document.getElementById('vUnit');
   const rpmEl   = document.getElementById('vRpm');
-  const midEl   = document.getElementById('vRpmMid');
+  const topEl   = document.getElementById('vTop');
   const hudEl   = document.getElementById('hud');
 
-  let smooth = 0, smoothRpm = 0, spin = 0;
+  let smooth = 0, smoothRpm = 0, topSpeed = 0, lastUnit = '';
 
   function loop() {
     const speed = parseFloat((speedEl.textContent || '').replace(/[^0-9.]/g, '')) || 0;
@@ -682,30 +729,206 @@
 
     if (max !== curMax) buildTicks(max);
 
+    /* reset top speed kalau ganti satuan */
+    if (unit !== lastUnit) { lastUnit = unit; topSpeed = 0; }
+    if (speed > topSpeed) {
+      topSpeed = speed;
+      if (topEl) topEl.textContent = Math.round(topSpeed);
+    }
+
     smooth    += (Math.min(1, speed / max) - smooth) * 0.16;
     smoothRpm += (Math.min(1, rpm / RPM_MAX) - smoothRpm) * 0.25;
 
-    /* speed arc + needle */
-    fill.style.strokeDasharray = (ARC * smooth) + ' ' + C;
-    needle.setAttribute('transform', 'rotate(' + (135 + smooth * 270) + ' 200 200)');
+    /* speed arc + titik ujung */
+    fill.setAttribute('stroke-dasharray', (smooth * 100).toFixed(2) + ' 100');
+    const dp = pt(180 + smooth * 180, SPD_R);
+    dot.setAttribute('cx', dp[0].toFixed(2));
+    dot.setAttribute('cy', dp[1].toFixed(2));
 
     /* rpm segments */
     const lit = Math.round(smoothRpm * RPM_SEGS);
     for (let i = 0; i < RPM_SEGS; i++) segs[i].classList.toggle('on', i < lit);
 
-    /* redline */
+    /* shift lights: mulai 55% rpm, penuh 93% */
+    for (let i = 0; i < LED_N; i++) {
+      leds[i].classList.toggle('on', smoothRpm >= 0.55 + (i / LED_N) * 0.38);
+    }
+
     hudEl.classList.toggle('hot', smoothRpm > 0.86);
-
-    /* ring dekoratif: makin cepat makin kencang berputar */
-    spin += 0.12 + speed * 0.018;
-    outerG.setAttribute('transform', 'rotate(' + spin + ' 200 200)');
-    innerG.setAttribute('transform', 'rotate(' + (-spin * 1.6) + ' 200 200)');
-
-    if (midEl) midEl.textContent = rpm;
+    hudEl.classList.toggle('flash', smoothRpm > 0.95);
 
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
+})();
+</script>
+
+
+<!-- ================= MUSIC PLAYER ================= -->
+<script>
+(function () {
+  'use strict';
+
+  /* ====== CONFIG MUSIK ======
+     1. Taruh file mp3 di folder "music" (sejajar dengan index.html)
+     2. Tambahkan barisnya di PLAYLIST di bawah ini
+     Kontrol: P = play/pause, N = next, B = prev, + / - = volume
+  */
+  const AUTO_PLAY = true;    // mulai otomatis setelah boot + welcome
+  const VOLUME    = 0.4;     // 0.0 - 1.0
+  const VOL_STEP  = 0.05;
+  const SHUFFLE   = false;   // true = lagu berikutnya acak
+
+  const PLAYLIST = [
+    { title: 'Judul Lagu 1', artist: 'Nama Artis', src: 'music/lagu1.mp3' },
+    { title: 'Judul Lagu 2', artist: 'Nama Artis', src: 'music/lagu2.mp3' },
+    { title: 'Judul Lagu 3', artist: 'Nama Artis', src: 'music/lagu3.mp3' }
+  ];
+
+  const bar      = document.getElementById('musicBar');
+  const stateEl  = document.getElementById('mState');
+  const titleEl  = document.getElementById('mTitle');
+  const artistEl = document.getElementById('mArtist');
+  const fillEl   = document.getElementById('mFill');
+  const timeEl   = document.getElementById('mTime');
+  const volEl    = document.getElementById('mVol');
+  if (!bar) return;
+
+  const audio = new Audio();
+  audio.preload = 'metadata';
+  audio.volume  = VOLUME;
+
+  let idx = 0, errors = 0, want = false, loaded = false;
+
+  function fmt(s) {
+    if (!isFinite(s)) return '0:00';
+    s = Math.floor(s);
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  function renderState() { stateEl.innerHTML = audio.paused ? '&#9654;' : '&#10074;&#10074;'; }
+  function renderVolume() { volEl.textContent = 'VOL ' + Math.round(audio.volume * 100); }
+
+  function load(i) {
+    if (!PLAYLIST.length) return;
+    idx = (i + PLAYLIST.length) % PLAYLIST.length;
+    const t = PLAYLIST[idx];
+    audio.src = t.src;
+    loaded = true;
+    titleEl.textContent  = t.title  || 'Tanpa Judul';
+    artistEl.textContent = t.artist || '';
+    fillEl.style.width = '0%';
+    timeEl.textContent = '0:00';
+  }
+
+  function play() {
+    if (!PLAYLIST.length) return;
+    want = true;
+    if (!loaded) load(idx);
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {});   // diblokir browser -> dicoba lagi saat input pertama
+  }
+  function pause()  { want = false; audio.pause(); }
+  function toggle() { audio.paused ? play() : pause(); }
+
+  function next() {
+    if (!PLAYLIST.length) return;
+    let n = idx + 1;
+    if (SHUFFLE && PLAYLIST.length > 1) {
+      do { n = Math.floor(Math.random() * PLAYLIST.length); } while (n === idx);
+    }
+    load(n);
+    if (want) play();
+  }
+  function prev() {
+    if (!PLAYLIST.length) return;
+    if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+    load(idx - 1);
+    if (want) play();
+  }
+  function setVolume(v) {
+    audio.volume = Math.max(0, Math.min(1, Number(v) || 0));
+    renderVolume();
+  }
+  function add(track) {
+    if (!track || !track.src) return;
+    PLAYLIST.push({ title: track.title, artist: track.artist, src: track.src });
+    bar.hidden = false;
+    if (!loaded) load(PLAYLIST.length - 1);
+  }
+
+  /* ====== EVENT AUDIO ====== */
+  audio.addEventListener('play',  renderState);
+  audio.addEventListener('pause', renderState);
+  audio.addEventListener('playing', () => { errors = 0; renderState(); });
+  audio.addEventListener('ended', next);
+  audio.addEventListener('timeupdate', () => {
+    const d = audio.duration;
+    fillEl.style.width = (isFinite(d) && d > 0 ? (audio.currentTime / d) * 100 : 0).toFixed(1) + '%';
+    timeEl.textContent = fmt(audio.currentTime);
+  });
+  audio.addEventListener('error', () => {
+    errors++;
+    if (errors >= PLAYLIST.length) {
+      want = false;
+      titleEl.textContent  = 'FILE TIDAK DITEMUKAN';
+      artistEl.textContent = 'Cek folder music & PLAYLIST';
+      renderState();
+      return;
+    }
+    load(idx + 1);
+    if (want) play();
+  });
+
+  /* ====== KONTROL ====== */
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    switch (e.key.toLowerCase()) {
+      case 'p': toggle(); break;
+      case 'n': next();   break;
+      case 'b': prev();   break;
+      case '=': case '+': setVolume(audio.volume + VOL_STEP); break;
+      case '-': case '_': setVolume(audio.volume - VOL_STEP); break;
+    }
+  });
+
+  /* kalau autoplay diblokir browser, mulai saat input pertama */
+  function retryOnce() { if (want && audio.paused) play(); }
+  window.addEventListener('pointerdown', retryOnce, { once: true });
+  window.addEventListener('keydown',     retryOnce, { once: true });
+
+  /* ====== API ======
+     window.HudMusic.play() / pause() / toggle() / next() / prev() / setVolume(0..1)
+     window.HudMusic.add({ title, artist, src })
+     SendNUIMessage({ action = 'music', cmd = 'toggle' | 'play' | 'pause' | 'next' | 'prev' })
+     SendNUIMessage({ action = 'music', cmd = 'volume', value = 0.5 })
+     SendNUIMessage({ action = 'music', cmd = 'add', track = { title = '..', artist = '..', src = 'music/x.mp3' } })
+  */
+  window.HudMusic = {
+    play, pause, toggle, next, prev, setVolume, add,
+    autoStart: function () { if (AUTO_PLAY) play(); }
+  };
+
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (!d || d.action !== 'music') return;
+    switch (d.cmd) {
+      case 'play':   play();   break;
+      case 'pause':  pause();  break;
+      case 'toggle': toggle(); break;
+      case 'next':   next();   break;
+      case 'prev':   prev();   break;
+      case 'volume': setVolume(d.value); break;
+      case 'add':    add(d.track); break;
+    }
+  });
+
+  /* ====== INIT ====== */
+  if (PLAYLIST.length) {
+    bar.hidden = false;
+    load(0);
+    renderVolume();
+    renderState();
+  }
 })();
 </script>
 
@@ -733,6 +956,7 @@
   const sceneEl    = document.getElementById('scene');
   const bannerEl   = document.getElementById('welcomeBanner');
   const mp3Welcome = document.getElementById('welcomeSound');
+  const startLights = document.querySelectorAll('.start-light');
 
   if (!overlay) return;
 
@@ -782,46 +1006,13 @@
     osc.stop(t0 + dur + 0.05);
   }
 
-  function chord(freqs, dur = 0.6, vol = 0.06) {
-    freqs.forEach((f, i) => beep(f, dur, vol, 'sine', i * 0.02));
-  }
-
-  function drone(dur = 5, vol = 0.025) {
-    const ctx = getAudio();
-    if (!ctx) return;
-    const osc  = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type  = 'sawtooth';
-    osc2.type = 'sine';
-    osc.frequency.value  = 55;
-    osc2.frequency.value = 82.4;
-    const t0 = ctx.currentTime;
-    gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.linearRampToValueAtTime(vol, t0 + 0.5);
-    gain.gain.setValueAtTime(vol, t0 + dur - 0.6);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(gain);
-    osc2.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(t0);  osc.stop(t0 + dur + 0.1);
-    osc2.start(t0); osc2.stop(t0 + dur + 0.1);
-  }
-
   function playBootAudio() {
-    beep(220, 0.10, 0.09, 'square', 0.00);
-    beep(440, 0.10, 0.09, 'square', 0.18);
-    beep(660, 0.10, 0.09, 'square', 0.36);
-
-    drone(BOOT_DURATION / 1000, 0.022);
-
-    for (let i = 0; i < 4; i++) sweep(300, 900, 0.35, 0.035, 'sawtooth', 0.6 + i * 0.9);
-    for (let i = 0; i < 18; i++) beep(1200 + (i % 3) * 200, 0.03, 0.025, 'square', 1.0 + i * 0.18);
-
-    const tEnd = BOOT_DURATION / 1000 - 0.5;
-    chord([523.25, 659.25, 783.99], 0.7, 0.07);
-    beep(1046.50, 0.15, 0.08, 'square', tEnd + 0.35);
-    sweep(200, 1500, 0.4, 0.06, 'square', tEnd + 0.5);
+    /* 5 beep lampu start (tiap 20% durasi), lalu "GO" lebih tinggi + rev */
+    const step = BOOT_DURATION / 1000 / 5;
+    for (let i = 0; i < 5; i++) beep(440, 0.14, 0.09, 'square', i * step);
+    const tEnd = BOOT_DURATION / 1000;
+    beep(880, 0.45, 0.10, 'square', tEnd);
+    sweep(120, 1400, 0.7, 0.05, 'sawtooth', tEnd - 0.1);
   }
 
   /* ====== WELCOME AUDIO ====== */
@@ -874,13 +1065,13 @@
 
   /* ====== BOOT STAGES ====== */
   const BOOT_STAGES = [
-    { at:  0, text: 'INITIALIZING AI CORE...' },
-    { at: 12, text: 'LOADING MODULES...' },
+    { at:  0, text: 'INITIALIZING RACE CORE...' },
+    { at: 12, text: 'WARMING UP TYRES...' },
     { at: 30, text: 'CALIBRATING SENSORS...' },
-    { at: 50, text: 'ESTABLISHING NEURAL LINK...' },
+    { at: 50, text: 'ESTABLISHING TELEMETRY LINK...' },
     { at: 68, text: 'SYNCING VEHICLE DATA...' },
-    { at: 85, text: 'RUNNING DIAGNOSTICS...' },
-    { at: 96, text: 'SYSTEM READY' }
+    { at: 85, text: 'FORMATION LAP COMPLETE...' },
+    { at: 96, text: 'LIGHTS OUT!' }
   ];
 
   let bootTimer = null;
@@ -891,11 +1082,12 @@
     if (running) return;
     running = true;
 
-    overlay.classList.remove('hide');
+    overlay.classList.remove('hide', 'go');
     sceneEl.classList.remove('hud-booted');
+    startLights.forEach(l => l.classList.remove('on'));
 
     fillEl.style.width = '0%';
-    textEl.textContent = 'INITIALIZING AI CORE...';
+    textEl.textContent = BOOT_STAGES[0].text;
     cpuEl.textContent  = 'CPU: 0%';
     memEl.textContent  = 'MEM: 0%';
     netEl.textContent  = 'NET: OK';
@@ -910,12 +1102,14 @@
 
       fillEl.style.width = pct.toFixed(2) + '%';
 
+      /* lampu start menyala satu per satu */
+      const lightsOn = Math.min(5, Math.floor(pct / 20) + (pct >= 5 ? 1 : 0));
+      startLights.forEach((l, i) => l.classList.toggle('on', i < Math.min(5, lightsOn)));
+
       let stage = BOOT_STAGES[0];
       for (const s of BOOT_STAGES) if (pct >= s.at) stage = s;
       if (textEl.textContent !== stage.text) {
         textEl.textContent = stage.text;
-        overlay.classList.add('glitch');
-        setTimeout(() => overlay.classList.remove('glitch'), 360);
       }
 
       cpuEl.textContent = 'CPU: ' + Math.min(100, Math.floor(pct + Math.random() * 8)) + '%';
@@ -929,10 +1123,14 @@
 
   function finishBoot() {
     fillEl.style.width = '100%';
-    textEl.textContent = 'SYSTEM READY';
+    textEl.textContent = 'GO! GO! GO!';
     cpuEl.textContent  = 'CPU: 100%';
     memEl.textContent  = 'MEM: 100%';
     netEl.textContent  = 'NET: CONNECTED';
+
+    /* semua lampu jadi hijau */
+    startLights.forEach(l => l.classList.add('on'));
+    overlay.classList.add('go');
 
     setTimeout(() => {
       overlay.classList.add('hide');
@@ -940,6 +1138,8 @@
         sceneEl.classList.add('hud-booted');
         running = false;
         if (AUTO_WELCOME) setTimeout(() => playWelcome(), 400);
+        /* musik mulai setelah suara welcome selesai */
+        if (window.HudMusic) setTimeout(window.HudMusic.autoStart, 5200);
       }, 200);
     }, 700);
   }
